@@ -1,0 +1,158 @@
+---
+import { site, fullAddress } from '../config/site';
+import SectionHeading from './SectionHeading.astro';
+import Icon from './Icon.astro';
+import type { IconName } from './icons';
+
+const nearby: { icon: IconName; label: string }[] = [
+  { icon: 'bus', label: 'Terminal de ônibus' },
+  { icon: 'church', label: 'Catedral' },
+  { icon: 'store', label: 'Comércio e restaurantes' },
+  { icon: 'wallet', label: 'Bancos e farmácias' },
+  { icon: 'landmark', label: 'Museus' },
+];
+---
+
+<section id="localizacao" class="section section--sand" aria-labelledby="localizacao-title">
+  <div class="container location">
+    <div class="location__info" data-reveal>
+      <SectionHeading eyebrow="Localização" title="No coração de Londrina." id="localizacao-title">
+        Hospede-se no centro da cidade, perto do terminal de ônibus, da Catedral e dos principais serviços da região
+        central — ideal para resolver compromissos de trabalho, estudar ou passear sem depender de longos
+        deslocamentos.
+      </SectionHeading>
+
+      <address class="location__address">
+        <Icon name="mapPin" size={26} />
+        <span>
+          <strong>{site.address.street}</strong>
+          {site.address.district}, {site.address.city} - {site.address.state}<br />
+          CEP {site.address.postalCode}
+        </span>
+      </address>
+
+      <ul class="location__nearby" role="list" aria-label="Nas proximidades">
+        {
+          nearby.map((item) => (
+            <li>
+              <Icon name={item.icon} size={18} /> {item.label}
+            </li>
+          ))
+        }
+      </ul>
+
+      <div class="location__actions">
+        <a href={site.links.maps} class="btn btn--navy" target="_blank" rel="noopener">
+          <Icon name="navigation" /> Abrir no Google Maps
+          <span class="visually-hidden">(abre em nova aba)</span>
+        </a>
+        <a href="#contato" class="btn btn--outline">Fale conosco</a>
+      </div>
+    </div>
+
+    <div class="location__map" data-reveal>
+      <iframe
+        src={site.links.mapsEmbed}
+        title={`Mapa: ${fullAddress}`}
+        loading="lazy"
+        referrerpolicy="no-referrer-when-downgrade"
+        allowfullscreen
+      ></iframe>
+    </div>
+  </div>
+</section>
+
+<style>
+  .location {
+    display: grid;
+    gap: clamp(2rem, 5vw, 4rem);
+    align-items: center;
+  }
+
+  .location__info :global(.section-heading) {
+    margin-bottom: 1.75rem;
+  }
+
+  .location__address {
+    display: flex;
+    gap: 1rem;
+    padding: 1.25rem 1.4rem;
+    border-radius: var(--radius);
+    background: var(--white);
+    border: 1px solid var(--line);
+    font-style: normal;
+    line-height: 1.5;
+    color: var(--ink-soft);
+  }
+
+  .location__address svg {
+    flex: none;
+    color: var(--gold-700);
+  }
+
+  .location__address strong {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--navy-900);
+  }
+
+  .location__nearby {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 1.25rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .location__nearby li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.85rem;
+    border-radius: 999px;
+    background: var(--white);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--navy-800);
+  }
+
+  .location__nearby svg {
+    color: var(--gold-700);
+  }
+
+  .location__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1.75rem;
+  }
+
+  .location__map {
+    overflow: hidden;
+    min-height: 360px;
+    border-radius: var(--radius-lg);
+    background: var(--sand-200);
+    box-shadow: var(--shadow);
+  }
+
+  .location__map iframe {
+    width: 100%;
+    height: 100%;
+    min-height: 360px;
+    border: 0;
+  }
+
+  @media (min-width: 960px) {
+    .location {
+      grid-template-columns: 1fr 1.1fr;
+    }
+
+    .location__map,
+    .location__map iframe {
+      min-height: 480px;
+    }
+  }
+</style>

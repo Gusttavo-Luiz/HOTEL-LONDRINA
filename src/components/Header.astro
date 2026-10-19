@@ -1,0 +1,471 @@
+---
+import { navigation } from '../data/navigation';
+import { site, phoneHref, whatsappUrl } from '../config/site';
+import Logo from './Logo.astro';
+import Icon from './Icon.astro';
+
+const waLink = whatsappUrl('Olá! Gostaria de informações sobre hospedagem no Hotel Triunfo.');
+---
+
+<header class="site-header" data-header>
+  <div class="topbar">
+    <div class="container topbar__inner">
+      <p class="topbar__info">
+        <Icon name="clock" size={16} />
+        <span>{site.contact.hours} · {site.address.street} – {site.address.district}, {site.address.city}</span>
+      </p>
+      <ul class="topbar__contacts" role="list">
+        <li>
+          <a href={phoneHref} data-track="phone">
+            <Icon name="phone" size={16} />
+            <span><span class="visually-hidden">Telefone: </span>{site.contact.phone.display}</span>
+          </a>
+        </li>
+        <li>
+          <a href={waLink} target="_blank" rel="noopener" data-track="whatsapp">
+            <Icon name="whatsapp" size={16} />
+            <span><span class="visually-hidden">WhatsApp: </span>{site.contact.whatsapp.display}</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="mainbar">
+    <div class="container mainbar__inner">
+      <a href="/#inicio" class="mainbar__brand" aria-label={`${site.name} — página inicial`}>
+        <Logo />
+      </a>
+
+      <nav class="nav" aria-label="Navegação principal">
+        <ul role="list">
+          {
+            navigation.map((item) => (
+              <li>
+                <a href={item.href} data-nav-link>
+                  {item.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+
+      <div class="mainbar__actions">
+        <a href={phoneHref} class="icon-btn mainbar__call" aria-label={`Ligar para ${site.contact.phone.display}`}>
+          <Icon name="phone" size={20} />
+        </a>
+        <a href="/#reservas" class="btn btn--primary btn--sm mainbar__cta">Faça sua reserva</a>
+        <button
+          type="button"
+          class="icon-btn menu-toggle"
+          aria-expanded="false"
+          aria-controls="mobile-menu"
+          data-menu-toggle
+        >
+          <Icon name="menu" size={24} class="menu-toggle__open" />
+          <Icon name="close" size={24} class="menu-toggle__close" />
+          <span class="visually-hidden">Abrir menu</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="mobile-menu" id="mobile-menu" data-mobile-menu hidden>
+    <nav aria-label="Navegação principal (celular)">
+      <ul role="list" class="mobile-menu__links">
+        {
+          navigation.map((item) => (
+            <li>
+              <a href={item.href} data-nav-link>
+                {item.label}
+                <Icon name="chevronRight" size={20} />
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+    <div class="mobile-menu__footer">
+      <a href="/#reservas" class="btn btn--primary btn--block">
+        <Icon name="calendar" /> Faça sua reserva
+      </a>
+      <a href={waLink} class="btn btn--whatsapp btn--block" target="_blank" rel="noopener">
+        <Icon name="whatsapp" /> WhatsApp {site.contact.whatsapp.display}
+      </a>
+      <a href={phoneHref} class="btn btn--outline btn--block">
+        <Icon name="phone" /> Ligar {site.contact.phone.display}
+      </a>
+      <p class="mobile-menu__hours"><Icon name="clock" size={16} /> {site.contact.hours}</p>
+    </div>
+  </div>
+</header>
+
+<script>
+  const header = document.querySelector<HTMLElement>('[data-header]');
+  const toggle = document.querySelector<HTMLButtonElement>('[data-menu-toggle]');
+  const menu = document.querySelector<HTMLElement>('[data-mobile-menu]');
+
+  if (header && toggle && menu) {
+    const label = toggle.querySelector('.visually-hidden');
+    const desktop = window.matchMedia('(min-width: 1080px)');
+
+    const focusables = () =>
+      Array.from(menu.querySelectorAll<HTMLElement>('a[href], button:not([disabled])')).concat(toggle);
+
+    const setOpen = (open: boolean, restoreFocus = true) => {
+      toggle.setAttribute('aria-expanded', String(open));
+      if (label) label.textContent = open ? 'Fechar menu' : 'Abrir menu';
+      header.classList.toggle('menu-open', open);
+      document.documentElement.classList.toggle('no-scroll', open);
+      if (open) {
+        menu.hidden = false;
+        requestAnimationFrame(() => menu.classList.add('is-open'));
+        menu.querySelector<HTMLElement>('a')?.focus();
+      } else {
+        menu.classList.remove('is-open');
+        menu.hidden = true;
+        if (restoreFocus) toggle.focus();
+      }
+    };
+
+    toggle.addEventListener('click', () => setOpen(toggle.getAttribute('aria-expanded') !== 'true'));
+
+    menu.addEventListener('click', (event) => {
+      if ((event.target as HTMLElement).closest('a')) setOpen(false, false);
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (toggle.getAttribute('aria-expanded') !== 'true') return;
+      if (event.key === 'Escape') {
+        setOpen(false);
+        return;
+      }
+      if (event.key === 'Tab') {
+        const items = focusables();
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
+    });
+
+    desktop.addEventListener('change', (event) => {
+      if (event.matches && toggle.getAttribute('aria-expanded') === 'true') setOpen(false, false);
+    });
+
+    // Cabeçalho compacto após a rolagem.
+    const onScroll = () => header.classList.toggle('is-scrolled', window.scrollY > 24);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    // Destaca no menu a seção visível.
+    const links = Array.from(document.querySelectorAll<HTMLAnchorElement>('.nav [data-nav-link]'));
+    const sections = links
+      .map((link) => document.getElementById(link.hash.slice(1)))
+      .filter((el): el is HTMLElement => Boolean(el));
+
+    if (sections.length && 'IntersectionObserver' in window) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            links.forEach((link) => {
+              const active = link.hash === `#${entry.target.id}`;
+              link.classList.toggle('is-active', active);
+              if (active) link.setAttribute('aria-current', 'location');
+              else link.removeAttribute('aria-current');
+            });
+          });
+        },
+        { rootMargin: '-45% 0px -50% 0px' },
+      );
+      sections.forEach((section) => observer.observe(section));
+    }
+  }
+</script>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  /* Barra superior */
+  .topbar {
+    background: var(--navy-900);
+    color: rgb(245 239 229 / 0.85);
+    font-size: 0.875rem;
+    overflow: hidden;
+    max-height: 44px;
+    transition: max-height 0.3s var(--ease);
+  }
+
+  .site-header.is-scrolled .topbar {
+    max-height: 0;
+  }
+
+  .topbar__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 40px;
+  }
+
+  .topbar__info,
+  .topbar__contacts a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+
+  .topbar__info svg,
+  .topbar__contacts svg {
+    color: var(--gold-300);
+  }
+
+  .topbar__contacts {
+    display: flex;
+    gap: 1.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .topbar__contacts a {
+    color: var(--white);
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .topbar__contacts a:hover {
+    color: var(--gold-300);
+  }
+
+  /* Barra principal */
+  .mainbar {
+    background: rgb(251 248 243 / 0.94);
+    backdrop-filter: saturate(1.4) blur(10px);
+    border-bottom: 1px solid transparent;
+    transition:
+      border-color 0.3s var(--ease),
+      box-shadow 0.3s var(--ease);
+  }
+
+  .site-header.is-scrolled .mainbar,
+  .site-header.menu-open .mainbar {
+    border-color: var(--line);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .mainbar__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    height: var(--header-h);
+    transition: height 0.3s var(--ease);
+  }
+
+  .site-header.is-scrolled .mainbar__inner {
+    height: 62px;
+  }
+
+  .mainbar__brand {
+    display: inline-flex;
+    text-decoration: none;
+    border-radius: 10px;
+  }
+
+  .nav ul {
+    display: flex;
+    gap: 0.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .nav a {
+    position: relative;
+    display: block;
+    padding: 0.5rem 0.7rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--ink);
+    text-decoration: none;
+    border-radius: 8px;
+    transition: color 0.2s var(--ease);
+  }
+
+  .nav a::after {
+    content: '';
+    position: absolute;
+    left: 0.7rem;
+    right: 0.7rem;
+    bottom: 0.25rem;
+    height: 2px;
+    background: var(--gold-500);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.25s var(--ease);
+  }
+
+  .nav a:hover,
+  .nav a.is-active {
+    color: var(--navy-700);
+  }
+
+  .nav a:hover::after,
+  .nav a.is-active::after {
+    transform: scaleX(1);
+  }
+
+  .mainbar__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .icon-btn {
+    display: inline-grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1.5px solid var(--line);
+    border-radius: 50%;
+    background: var(--white);
+    color: var(--navy-900);
+    cursor: pointer;
+    transition:
+      background-color 0.2s var(--ease),
+      border-color 0.2s var(--ease);
+  }
+
+  .icon-btn:hover {
+    border-color: var(--navy-700);
+  }
+
+  .menu-toggle :global(.menu-toggle__close) {
+    display: none;
+  }
+
+  .menu-open .menu-toggle :global(.menu-toggle__open) {
+    display: none;
+  }
+
+  .menu-open .menu-toggle :global(.menu-toggle__close) {
+    display: block;
+  }
+
+  /* Menu mobile */
+  .mobile-menu {
+    position: fixed;
+    inset: calc(var(--header-h) + 40px) 0 0;
+    z-index: 99;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding: 1rem var(--gutter) max(1.5rem, env(safe-area-inset-bottom));
+    background: var(--sand-50);
+    overflow-y: auto;
+    opacity: 0;
+    transform: translateY(-8px);
+    transition:
+      opacity 0.22s var(--ease),
+      transform 0.22s var(--ease);
+  }
+
+  .site-header.is-scrolled .mobile-menu {
+    inset: 62px 0 0;
+  }
+
+  .mobile-menu[hidden] {
+    display: none;
+  }
+
+  .mobile-menu.is-open {
+    opacity: 1;
+    transform: none;
+  }
+
+  .mobile-menu__links {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .mobile-menu__links a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.95rem 0.25rem;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    color: var(--navy-900);
+    text-decoration: none;
+  }
+
+  .mobile-menu__links svg {
+    color: var(--gold-700);
+  }
+
+  .mobile-menu__footer {
+    display: grid;
+    gap: 0.65rem;
+  }
+
+  .mobile-menu__hours {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    font-size: 0.9375rem;
+    color: var(--ink-soft);
+  }
+
+  @media (max-width: 1079px) {
+    .nav {
+      display: none;
+    }
+  }
+
+  @media (min-width: 1080px) {
+    .menu-toggle,
+    .mainbar__call,
+    .mobile-menu {
+      display: none !important;
+    }
+  }
+
+  @media (max-width: 767px) {
+    .topbar {
+      display: none;
+    }
+
+    .mobile-menu {
+      inset: var(--header-h) 0 0;
+    }
+  }
+
+  @media (max-width: 479px) {
+    .mainbar__cta {
+      display: none;
+    }
+  }
+
+  @media (min-width: 1080px) and (max-width: 1199px) {
+    .nav a {
+      padding-inline: 0.5rem;
+    }
+  }
+</style>

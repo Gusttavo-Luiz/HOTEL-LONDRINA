@@ -1,0 +1,92 @@
+---
+import { faq } from '../data/faq';
+import SectionHeading from './SectionHeading.astro';
+import Icon from './Icon.astro';
+---
+
+<section id="duvidas" class="section" aria-labelledby="duvidas-title">
+  <div class="container faq">
+    <SectionHeading eyebrow="Dúvidas frequentes" title="Informações para planejar sua hospedagem." id="duvidas-title">
+      Não encontrou o que procurava? Fale com a recepção — atendemos 24 horas.
+    </SectionHeading>
+
+    <div class="faq__list">
+      {
+        faq.map((item, index) => (
+          <details class="faq__item" open={index === 0} data-reveal>
+            <summary>
+              <span>{item.question}</span>
+              <Icon name="chevronDown" size={22} class="faq__chevron" />
+            </summary>
+            <p>{item.answer}</p>
+          </details>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .faq {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .faq__list {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .faq__item {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--white);
+    transition: border-color 0.2s var(--ease);
+  }
+
+  .faq__item[open] {
+    border-color: var(--sand-300);
+    box-shadow: var(--shadow-sm);
+  }
+
+  summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.15rem 1.35rem;
+    font-weight: 650;
+    font-size: 1.0625rem;
+    color: var(--navy-900);
+    cursor: pointer;
+    list-style: none;
+    border-radius: var(--radius);
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
+  summary :global(.faq__chevron) {
+    flex: none;
+    color: var(--gold-700);
+    transition: transform 0.25s var(--ease);
+  }
+
+  .faq__item[open] summary :global(.faq__chevron) {
+    transform: rotate(180deg);
+  }
+
+  .faq__item p {
+    padding: 0 1.35rem 1.25rem;
+    color: var(--ink-soft);
+  }
+
+  @media (min-width: 960px) {
+    .faq {
+      grid-template-columns: 0.8fr 1.2fr;
+      gap: 4rem;
+      align-items: start;
+    }
+  }
+</style>

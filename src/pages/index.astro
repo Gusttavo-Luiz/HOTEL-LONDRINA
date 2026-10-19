@@ -1,0 +1,51 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+import About from '../components/About.astro';
+import Features from '../components/Features.astro';
+import Rooms from '../components/Rooms.astro';
+import Gallery from '../components/Gallery.astro';
+import Booking from '../components/Booking.astro';
+import Reviews from '../components/Reviews.astro';
+import Location from '../components/Location.astro';
+import FAQ from '../components/FAQ.astro';
+import Contact from '../components/Contact.astro';
+import { faq } from '../data/faq';
+import { site } from '../config/site';
+
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faq.map((item) => ({
+    '@type': 'Question',
+    name: item.question,
+    acceptedAnswer: { '@type': 'Answer', text: item.answer },
+  })),
+};
+
+const websiteSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  '@id': `${site.url}/#website`,
+  name: site.name,
+  url: `${site.url}/`,
+  inLanguage: 'pt-BR',
+};
+---
+
+<BaseLayout
+  title="Hotel Triunfo Londrina | Hotel econômico no centro de Londrina"
+  description="Hotel barato no centro de Londrina há mais de 60 anos: estacionamento próprio, Wi-Fi nos quartos, café da manhã e atendimento 24 horas. Consulte e reserve."
+  jsonLd={[websiteSchema, faqSchema]}
+>
+  <Hero />
+  <About />
+  <Features />
+  <Rooms />
+  <Gallery />
+  <Booking />
+  <Reviews />
+  <Location />
+  <FAQ />
+  <Contact />
+</BaseLayout>

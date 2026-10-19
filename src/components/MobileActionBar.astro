@@ -1,0 +1,64 @@
+---
+import { phoneHref, whatsappUrl } from '../config/site';
+import Icon from './Icon.astro';
+
+const waLink = whatsappUrl('Olá! Gostaria de informações sobre hospedagem no Hotel Triunfo.');
+---
+
+<nav class="action-bar" aria-label="Atalhos de reserva">
+  <a href={phoneHref} class="action-bar__item">
+    <Icon name="phone" size={20} />
+    <span>Ligar</span>
+  </a>
+  <a href={waLink} class="action-bar__item" target="_blank" rel="noopener">
+    <Icon name="whatsapp" size={20} />
+    <span>WhatsApp</span>
+  </a>
+  <a href="/#reservas" class="action-bar__item action-bar__item--primary">
+    <Icon name="calendar" size={20} />
+    <span>Reservar</span>
+  </a>
+</nav>
+
+<style>
+  .action-bar {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 90;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1.3fr;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem max(0.5rem, env(safe-area-inset-bottom));
+    background: rgb(251 248 243 / 0.97);
+    backdrop-filter: blur(8px);
+    border-top: 1px solid var(--line);
+    box-shadow: 0 -6px 20px -10px rgb(15 35 64 / 0.25);
+  }
+
+  .action-bar__item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-height: 46px;
+    border-radius: 999px;
+    border: 1.5px solid var(--line);
+    background: var(--white);
+    color: var(--navy-900);
+    font-size: 0.9375rem;
+    font-weight: 650;
+    text-decoration: none;
+  }
+
+  .action-bar__item--primary {
+    border-color: var(--gold-400);
+    background: var(--gold-400);
+    color: var(--navy-950);
+  }
+
+  @media (min-width: 768px) {
+    .action-bar {
+      display: none;
+    }
+  }
+</style>

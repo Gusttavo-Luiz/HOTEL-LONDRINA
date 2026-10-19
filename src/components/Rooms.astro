@@ -1,0 +1,170 @@
+---
+import { rooms, stayIncludes } from '../data/rooms';
+import SectionHeading from './SectionHeading.astro';
+import RoomCard from './RoomCard.astro';
+import Icon from './Icon.astro';
+---
+
+<section id="acomodacoes" class="section" aria-labelledby="acomodacoes-title">
+  <div class="container">
+    <SectionHeading eyebrow="Acomodações" title="Encontre a acomodação ideal para sua estadia." id="acomodacoes-title">
+      Conheça nossas opções e consulte a disponibilidade para suas datas.
+    </SectionHeading>
+
+    {
+      rooms.length > 0 ? (
+        <div class="rooms">
+          {rooms.map((room) => (
+            <RoomCard room={room} />
+          ))}
+        </div>
+      ) : (
+        <div class="rooms-empty" data-reveal>
+          <div class="rooms-empty__text">
+            <h3>Acomodações simples e aconchegantes</h3>
+            <p>
+              Quartos pensados para quem busca economia, praticidade e boa localização no centro de Londrina. A
+              configuração das camas e a disponibilidade variam conforme a data — nossa equipe informa as opções
+              ideais para a sua estadia.
+            </p>
+            <p class="rooms-empty__notice">
+              <Icon name="info" size={20} />
+              <span>
+                <strong>Banheiro compartilhado:</strong> o hotel possui acomodações com banheiro compartilhado. Ao
+                solicitar sua reserva, informe sua preferência para que a equipe confirme as opções disponíveis.
+              </span>
+            </p>
+            <a href="#reservas" class="btn btn--navy">
+              Consultar disponibilidade <Icon name="arrowRight" />
+            </a>
+          </div>
+
+          <div class="rooms-empty__includes">
+            <h3 class="rooms-empty__subtitle">Em todas as estadias</h3>
+            <ul role="list">
+              {stayIncludes.map((item) => (
+                <li>
+                  <span>
+                    <Icon name={item.icon} size={20} />
+                  </span>
+                  {item.label}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )
+    }
+  </div>
+</section>
+
+<script>
+  // Pré-seleciona a categoria no formulário ao clicar em "Consultar disponibilidade".
+  document.querySelectorAll<HTMLAnchorElement>('[data-room-select]').forEach((link) => {
+    link.addEventListener('click', () => {
+      const select = document.querySelector<HTMLSelectElement>('#reserva-categoria');
+      if (select) select.value = link.dataset.roomSelect ?? '';
+    });
+  });
+</script>
+
+<style>
+  .rooms {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+    gap: 1.5rem;
+  }
+
+  .rooms-empty {
+    display: grid;
+    gap: 2rem;
+    padding: clamp(1.5rem, 4vw, 3rem);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--white);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .rooms-empty__text {
+    display: grid;
+    gap: 1.1rem;
+    align-content: start;
+    justify-items: start;
+    color: var(--ink-soft);
+  }
+
+  .rooms-empty h3 {
+    font-size: 1.6rem;
+  }
+
+  .rooms-empty__notice {
+    display: flex;
+    gap: 0.75rem;
+    padding: 1rem 1.1rem;
+    border-radius: var(--radius);
+    background: var(--sand-100);
+    color: var(--navy-900);
+    font-size: 0.9375rem;
+  }
+
+  .rooms-empty__notice svg {
+    flex: none;
+    margin-top: 0.15rem;
+    color: var(--gold-700);
+  }
+
+  .rooms-empty__includes {
+    padding: 1.5rem;
+    border-radius: var(--radius);
+    background: var(--navy-900);
+    color: var(--white);
+  }
+
+  .rooms-empty__subtitle {
+    margin-bottom: 1rem;
+    color: var(--gold-300) !important;
+    font-family: var(--font-body);
+    font-size: 0.8125rem !important;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .rooms-empty__includes ul {
+    display: grid;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .rooms-empty__includes li {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.55rem 0;
+    border-bottom: 1px solid rgb(255 255 255 / 0.1);
+    font-weight: 600;
+  }
+
+  .rooms-empty__includes li:last-child {
+    border-bottom: 0;
+  }
+
+  .rooms-empty__includes li span {
+    display: inline-grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgb(214 174 102 / 0.14);
+    color: var(--gold-300);
+  }
+
+  @media (min-width: 900px) {
+    .rooms-empty {
+      grid-template-columns: 1.4fr 1fr;
+      align-items: start;
+    }
+  }
+</style>
