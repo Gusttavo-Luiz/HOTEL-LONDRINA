@@ -1,0 +1,283 @@
+---
+import { site, fullAddress } from '../config/site';
+import { quickHighlights } from '../data/highlights';
+import { featuredPhotos } from '../data/photos';
+import { getPhoto } from '../lib/photos';
+import Photo from './Photo.astro';
+import Icon from './Icon.astro';
+
+const hasHeroPhoto = Boolean(getPhoto(featuredPhotos.hero.file));
+---
+
+<section id="inicio" class:list={['hero', { 'hero--photo': hasHeroPhoto }]} aria-labelledby="hero-title">
+  <div class="hero__media" aria-hidden={hasHeroPhoto ? undefined : 'true'}>
+    {
+      hasHeroPhoto ? (
+        <Photo
+          file={featuredPhotos.hero.file}
+          alt={featuredPhotos.hero.alt}
+          widths={[640, 1024, 1600, 2200]}
+          sizes="100vw"
+          loading="eager"
+          fetchpriority="high"
+          class="hero__img"
+        />
+      ) : (
+        <div class="hero__pattern" />
+      )
+    }
+  </div>
+
+  <div class="container hero__inner">
+    <div class="hero__content">
+      <p class="hero__badge">
+        <span class="hero__badge-years">+{site.yearsOfHistory}</span>
+        <span>anos de hospitalidade no centro de {site.address.city}</span>
+      </p>
+
+      <h1 id="hero-title">Hotel econômico em Londrina, com localização privilegiada.</h1>
+
+      <p class="hero__subtitle">
+        Há mais de 60 anos recebendo hóspedes com acolhimento, praticidade e economia no centro de Londrina.
+      </p>
+
+      <div class="hero__actions">
+        <a href="#reservas" class="btn btn--primary">
+          <Icon name="calendar" /> Faça sua reserva
+        </a>
+        <a href="#sobre" class="btn btn--ghost-light">
+          Conheça o hotel <Icon name="arrowRight" />
+        </a>
+      </div>
+
+      <p class="hero__address">
+        <Icon name="mapPin" size={18} />
+        <span>{fullAddress}</span>
+      </p>
+    </div>
+
+    {
+      !hasHeroPhoto && site.showPhotoPlaceholders && (
+        <div class="hero__slot" aria-hidden="true">
+          <Photo file={featuredPhotos.hero.file} alt={featuredPhotos.hero.alt} placeholderLabel="Foto de destaque (fachada ou recepção)" />
+        </div>
+      )
+    }
+  </div>
+
+  <div class="hero__highlights">
+    <ul class="container" role="list" aria-label="Diferenciais do hotel">
+      {
+        quickHighlights.map((item) => (
+          <li>
+            <span class="hero__highlight-icon">
+              <Icon name={item.icon} size={22} />
+            </span>
+            {item.label}
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>
+
+<style>
+  .hero {
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    min-height: min(88svh, 820px);
+    color: var(--white);
+    background: var(--navy-900);
+    overflow: hidden;
+  }
+
+  .hero__media {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+  }
+
+  .hero__media :global(img),
+  .hero__media :global(picture) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .hero--photo .hero__media::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(90deg, rgb(10 26 49 / 0.88) 0%, rgb(10 26 49 / 0.62) 45%, rgb(10 26 49 / 0.2) 100%),
+      linear-gradient(0deg, rgb(10 26 49 / 0.55) 0%, transparent 35%);
+  }
+
+  /* Fundo de marca enquanto não há foto oficial */
+  .hero__pattern {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 85% 20%, rgb(214 174 102 / 0.16), transparent 42%),
+      radial-gradient(circle at 10% 90%, rgb(35 68 118 / 0.7), transparent 50%),
+      var(--navy-900);
+  }
+
+  .hero__pattern::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(rgb(255 255 255 / 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(255 255 255 / 0.035) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: linear-gradient(90deg, transparent, #000 60%);
+  }
+
+  .hero__inner {
+    display: grid;
+    align-items: center;
+    gap: 2.5rem;
+    padding-block: clamp(2.25rem, 7vw, 6rem) clamp(2rem, 5vw, 3.5rem);
+  }
+
+  .hero__content {
+    display: grid;
+    gap: 1.4rem;
+    max-width: 40rem;
+  }
+
+  .hero__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    justify-self: start;
+    padding: 0.4rem 1rem 0.4rem 0.4rem;
+    border: 1px solid rgb(228 199 143 / 0.4);
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.05);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--gold-300);
+  }
+
+  .hero__badge-years {
+    display: inline-grid;
+    place-items: center;
+    min-width: 44px;
+    height: 32px;
+    padding-inline: 0.5rem;
+    border-radius: 999px;
+    background: var(--gold-400);
+    color: var(--navy-950);
+    font-family: var(--font-display);
+    font-weight: 700;
+  }
+
+  h1 {
+    font-size: clamp(2.25rem, 5.6vw, 4rem);
+    font-weight: 520;
+    color: var(--white);
+    line-height: 1.06;
+  }
+
+  .hero__subtitle {
+    font-size: clamp(1.0625rem, 1.9vw, 1.25rem);
+    color: rgb(245 239 229 / 0.88);
+    max-width: 34rem;
+  }
+
+  .hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.4rem;
+  }
+
+  .hero__address {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.9375rem;
+    color: rgb(245 239 229 / 0.78);
+  }
+
+  .hero__address svg {
+    flex: none;
+    margin-top: 0.2rem;
+    color: var(--gold-300);
+  }
+
+  .hero__slot {
+    display: none;
+  }
+
+  .hero__slot :global(.photo-placeholder) {
+    aspect-ratio: 4 / 5;
+    border-radius: var(--radius-lg);
+    background-color: rgb(255 255 255 / 0.08);
+    background-image: repeating-linear-gradient(-45deg, transparent 0 14px, rgb(255 255 255 / 0.03) 14px 28px);
+    border-color: rgb(255 255 255 / 0.25);
+    color: var(--gold-300);
+  }
+
+  .hero__slot :global(.photo-placeholder__label) {
+    color: var(--white);
+  }
+
+  .hero__slot :global(.photo-placeholder__file) {
+    color: rgb(255 255 255 / 0.6);
+  }
+
+  .hero__highlights {
+    align-self: end;
+    border-top: 1px solid rgb(255 255 255 / 0.12);
+    background: rgb(10 26 49 / 0.55);
+    backdrop-filter: blur(6px);
+  }
+
+  .hero__highlights ul {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.25rem 1rem;
+    margin-block: 0;
+    padding: 1rem 0;
+    list-style: none;
+  }
+
+  .hero__highlights li {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding-block: 0.45rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .hero__highlight-icon {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgb(214 174 102 / 0.14);
+    color: var(--gold-300);
+  }
+
+  @media (min-width: 900px) {
+    .hero__inner {
+      grid-template-columns: 1.35fr 1fr;
+    }
+
+    .hero__slot {
+      display: block;
+    }
+
+    .hero__highlights ul {
+      grid-template-columns: repeat(4, 1fr);
+      padding-block: 1.25rem;
+    }
+  }
+</style>

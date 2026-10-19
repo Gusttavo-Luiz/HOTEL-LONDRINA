@@ -1,0 +1,119 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { site, fullAddress, phoneHref, whatsappUrl } from '../config/site';
+
+const updated = '19 de outubro de 2026';
+const usesEndpoint = Boolean(site.forms.contactEndpoint);
+---
+
+<BaseLayout
+  title="Política de Privacidade | Hotel Triunfo Londrina"
+  description="Saiba como o Hotel Triunfo Londrina trata os dados pessoais informados nos formulários de reserva e contato do site, conforme a LGPD."
+>
+  <article class="section legal">
+    <div class="container legal__inner">
+      <p class="eyebrow">Transparência</p>
+      <h1>Política de Privacidade</h1>
+      <p class="legal__updated">Última atualização: {updated}</p>
+
+      <p>
+        Esta política explica como o <strong>{site.name}</strong>, localizado na {fullAddress}, trata os dados pessoais
+        informados neste site, em conformidade com a Lei Geral de Proteção de Dados Pessoais (Lei nº 13.709/2018 — LGPD).
+      </p>
+
+      <h2>1. Quais dados coletamos</h2>
+      <p>Coletamos apenas os dados que você informa voluntariamente nos formulários do site:</p>
+      <ul>
+        <li><strong>Solicitação de reserva:</strong> datas de check-in e check-out, número de hóspedes e de quartos, nome, telefone e observações.</li>
+        <li><strong>Contato:</strong> nome, e-mail, telefone (opcional) e mensagem.</li>
+      </ul>
+      <p>O site não utiliza cookies de publicidade nem ferramentas de rastreamento próprias.</p>
+
+      <h2>2. Para que usamos os dados</h2>
+      <p>
+        Os dados são usados exclusivamente para responder à sua solicitação, verificar disponibilidade, enviar
+        informações sobre a hospedagem e realizar a reserva, quando confirmada por você. Não vendemos nem
+        compartilhamos seus dados para fins de marketing.
+      </p>
+
+      <h2>3. Como os dados são enviados</h2>
+      {
+        usesEndpoint ? (
+          <p>
+            O formulário de contato envia os dados por conexão segura (HTTPS) ao canal de atendimento do hotel. A
+            solicitação de reserva é preparada como mensagem no WhatsApp, e o envio só acontece quando você confirma no
+            aplicativo.
+          </p>
+        ) : (
+          <p>
+            Os formulários não armazenam dados neste site. Ao enviar, o conteúdo é preparado como mensagem no WhatsApp
+            oficial do hotel ({site.contact.whatsapp.display}), e o envio só acontece quando você confirma no aplicativo.
+            O uso do WhatsApp está sujeito à política de privacidade do próprio serviço (Meta).
+          </p>
+        )
+      }
+
+      <h2>4. Serviços de terceiros</h2>
+      <p>
+        A seção de localização exibe um mapa do Google Maps, carregado somente quando a seção é exibida. O Google pode
+        coletar dados de navegação conforme a sua própria política de privacidade. Os links para Google Maps e WhatsApp
+        abrem os respectivos serviços.
+      </p>
+
+      <h2>5. Por quanto tempo guardamos</h2>
+      <p>
+        Mantemos as informações pelo tempo necessário para atender à sua solicitação e cumprir obrigações legais
+        relacionadas à hospedagem.
+      </p>
+
+      <h2>6. Seus direitos</h2>
+      <p>
+        Você pode solicitar, a qualquer momento, a confirmação do tratamento, o acesso, a correção ou a exclusão dos seus
+        dados, além das demais garantias previstas no art. 18 da LGPD.
+      </p>
+
+      <h2>7. Fale conosco</h2>
+      <p>
+        Para exercer seus direitos ou tirar dúvidas sobre esta política, entre em contato pelo telefone
+        <a href={phoneHref}>{site.contact.phone.display}</a>, pelo WhatsApp
+        <a href={whatsappUrl('Olá! Tenho uma dúvida sobre a Política de Privacidade do site.')} target="_blank" rel="noopener">{site.contact.whatsapp.display}</a>
+        ou pessoalmente na recepção, que funciona 24 horas.
+      </p>
+
+      <p class="legal__back"><a href="/" class="btn btn--outline">Voltar ao início</a></p>
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .legal__inner {
+    max-width: 46rem;
+    display: grid;
+    gap: 1rem;
+  }
+
+  h1 {
+    font-size: clamp(2rem, 5vw, 3rem);
+  }
+
+  h2 {
+    margin-top: 1.25rem;
+    font-size: 1.4rem;
+  }
+
+  .legal__updated {
+    font-size: 0.9375rem;
+    color: var(--ink-soft);
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 1.25rem;
+    display: grid;
+    gap: 0.4rem;
+  }
+
+  .legal__back {
+    margin-top: 1.5rem;
+  }
+</style>

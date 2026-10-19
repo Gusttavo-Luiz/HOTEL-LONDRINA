@@ -1,0 +1,318 @@
+---
+import { site, fullAddress, phoneHref, whatsappUrl } from '../config/site';
+import SectionHeading from './SectionHeading.astro';
+import Icon from './Icon.astro';
+
+const waLink = whatsappUrl('Olá! Gostaria de falar com a recepção do Hotel Triunfo.');
+const usesEndpoint = Boolean(site.forms.contactEndpoint);
+---
+
+<section id="contato" class="section section--sand" aria-labelledby="contato-title">
+  <div class="container contact">
+    <div class="contact__info" data-reveal>
+      <SectionHeading eyebrow="Contato" title="Fale com a nossa recepção." id="contato-title">
+        Tire dúvidas, peça informações para hospedar colaboradores da sua empresa ou consulte a disponibilidade para estadias longas. Atendemos 24 horas.
+      </SectionHeading>
+
+      <div class="contact__cards">
+        <a href={phoneHref} class="contact-card">
+          <span class="contact-card__icon"><Icon name="phone" /></span>
+          <span>
+            <small>Ligar para a recepção</small>
+            <strong>{site.contact.phone.display}</strong>
+          </span>
+        </a>
+        <a href={waLink} class="contact-card" target="_blank" rel="noopener">
+          <span class="contact-card__icon contact-card__icon--wa"><Icon name="whatsapp" /></span>
+          <span>
+            <small>Conversar pelo WhatsApp</small>
+            <strong>{site.contact.whatsapp.display}</strong>
+          </span>
+        </a>
+        <a href={site.links.maps} class="contact-card" target="_blank" rel="noopener">
+          <span class="contact-card__icon"><Icon name="mapPin" /></span>
+          <span>
+            <small>Endereço — ver no mapa</small>
+            <strong class="contact-card__address">{fullAddress}</strong>
+          </span>
+        </a>
+        <div class="contact-card contact-card--static">
+          <span class="contact-card__icon"><Icon name="clock" /></span>
+          <span>
+            <small>Horário de atendimento</small>
+            <strong>Aberto 24 horas, todos os dias</strong>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <form class="contact__form" novalidate data-contact-form data-endpoint={site.forms.contactEndpoint ?? ''} data-reveal>
+      <h3>Envie uma mensagem</h3>
+
+      <div class="field">
+        <label for="contato-nome">Nome <span class="req" aria-hidden="true">*</span></label>
+        <input class="input" id="contato-nome" name="name" type="text" autocomplete="name" maxlength="120" required aria-describedby="erro-contato-name" />
+        <p class="field-error" id="erro-contato-name" data-error-for="name" aria-live="polite"></p>
+      </div>
+
+      <div class="contact__row">
+        <div class="field">
+          <label for="contato-email">E-mail <span class="req" aria-hidden="true">*</span></label>
+          <input class="input" id="contato-email" name="email" type="email" autocomplete="email" maxlength="160" required aria-describedby="erro-contato-email" />
+          <p class="field-error" id="erro-contato-email" data-error-for="email" aria-live="polite"></p>
+        </div>
+        <div class="field">
+          <label for="contato-telefone">Telefone com DDD <span class="hint">(opcional)</span></label>
+          <input
+            class="input"
+            id="contato-telefone"
+            name="phone"
+            type="tel"
+            inputmode="tel"
+            autocomplete="tel"
+            placeholder="(43) 99999-9999"
+            maxlength="20"
+            aria-describedby="erro-contato-phone"
+          />
+          <p class="field-error" id="erro-contato-phone" data-error-for="phone" aria-live="polite"></p>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="contato-mensagem">Mensagem <span class="req" aria-hidden="true">*</span></label>
+        <textarea class="input" id="contato-mensagem" name="message" rows="5" maxlength="2000" required aria-describedby="erro-contato-message"></textarea>
+        <p class="field-error" id="erro-contato-message" data-error-for="message" aria-live="polite"></p>
+      </div>
+
+      <div class="hp-field" aria-hidden="true">
+        <label for="contato-site">Não preencha este campo</label>
+        <input id="contato-site" name="website" type="text" tabindex="-1" autocomplete="off" />
+      </div>
+
+      <p class="contact__legal">
+        {
+          usesEndpoint
+            ? 'Seus dados são usados apenas para responder ao seu contato.'
+            : 'Ao enviar, sua mensagem será aberta no WhatsApp oficial do hotel para você confirmar o envio.'
+        }
+        Consulte nossa <a href="/politica-de-privacidade/">Política de Privacidade</a>.
+      </p>
+
+      <button type="submit" class="btn btn--navy btn--block">
+        <Icon name={usesEndpoint ? 'mail' : 'whatsapp'} /> Enviar mensagem
+      </button>
+
+      <div class="form-status" data-form-status role="status" aria-live="polite"></div>
+    </form>
+  </div>
+</section>
+
+<script>
+  import { whatsappUrl } from '../config/site';
+  import { clean, formatPhone, isValidEmail, isValidName, normalizePhone } from '../lib/validation';
+  import { applyErrors, clearErrors, escapeHTML, openExternal, setBusy, setFieldError, setStatus } from '../scripts/form-ui';
+
+  const form = document.querySelector<HTMLFormElement>('[data-contact-form]');
+
+  if (form) {
+    const endpoint = form.dataset.endpoint;
+    const submit = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+    const phone = form.elements.namedItem('phone') as HTMLInputElement;
+
+    phone.addEventListener('blur', () => {
+      const digits = normalizePhone(phone.value);
+      if (digits) phone.value = formatPhone(digits);
+    });
+
+    form.addEventListener('input', (event) => {
+      const target = event.target as HTMLInputElement;
+      if (target.getAttribute('aria-invalid') === 'true') setFieldError(form, target.name, undefined);
+    });
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      clearErrors(form);
+      setStatus(form, '', '');
+
+      const data = new FormData(form);
+      // Honeypot: robôs costumam preencher todos os campos.
+      if (String(data.get('website') ?? '')) return;
+
+      const name = clean(String(data.get('name') ?? ''), 120);
+      const email = clean(String(data.get('email') ?? ''), 160);
+      const phoneRaw = clean(String(data.get('phone') ?? ''), 20);
+      const phoneDigits = phoneRaw ? normalizePhone(phoneRaw) : null;
+      const message = String(data.get('message') ?? '')
+        .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
+        .trim()
+        .slice(0, 2000);
+
+      const valid = applyErrors(form, {
+        name: isValidName(name) ? undefined : 'Informe seu nome.',
+        email: !email
+          ? 'Informe seu e-mail.'
+          : isValidEmail(email)
+            ? undefined
+            : 'Informe um e-mail válido, por exemplo nome@exemplo.com.br.',
+        phone: phoneRaw && !phoneDigits ? 'Informe um telefone válido com DDD, por exemplo (43) 3323-5054.' : undefined,
+        message: message.length >= 10 ? undefined : 'Escreva sua mensagem (mínimo de 10 caracteres).',
+      });
+      if (!valid) return;
+
+      const payload = { name, email, phone: phoneDigits ? formatPhone(phoneDigits) : '', message };
+
+      if (endpoint) {
+        setBusy(submit, true);
+        try {
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          if (!response.ok) throw new Error(String(response.status));
+          form.reset();
+          setStatus(form, 'success', 'Mensagem enviada com sucesso! Nossa equipe responderá em breve.');
+        } catch {
+          const wa = whatsappUrl(`Olá! Meu nome é ${name}. ${message}`);
+          setStatus(
+            form,
+            'error',
+            `Não foi possível enviar sua mensagem agora. Tente novamente ou <a href="${escapeHTML(wa)}" target="_blank" rel="noopener">fale pelo WhatsApp</a>.`,
+          );
+        } finally {
+          setBusy(submit, false);
+        }
+        return;
+      }
+
+      const text = [
+        'Olá! Mensagem enviada pelo site do Hotel Triunfo:',
+        '',
+        `• Nome: ${payload.name}`,
+        `• E-mail: ${payload.email}`,
+        payload.phone ? `• Telefone: ${payload.phone}` : null,
+        '',
+        payload.message,
+      ]
+        .filter((line) => line !== null)
+        .join('\n');
+
+      const url = whatsappUrl(text);
+      const opened = openExternal(url);
+      const link = `<a href="${escapeHTML(url)}" target="_blank" rel="noopener">abrir o WhatsApp</a>`;
+      setStatus(
+        form,
+        'success',
+        opened
+          ? `Sua mensagem foi preparada no WhatsApp. <strong>Toque em enviar</strong> para que ela chegue à recepção. Se a conversa não abriu, clique para ${link}.`
+          : `Seu navegador bloqueou a nova janela. Clique para ${link} e enviar sua mensagem.`,
+      );
+    });
+  }
+</script>
+
+<style>
+  .contact {
+    display: grid;
+    gap: clamp(2rem, 5vw, 4rem);
+    align-items: start;
+  }
+
+  .contact__info :global(.section-heading) {
+    margin-bottom: 1.75rem;
+  }
+
+  .contact__cards {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .contact-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.15rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--white);
+    color: inherit;
+    text-decoration: none;
+    transition:
+      border-color 0.2s var(--ease),
+      box-shadow 0.2s var(--ease),
+      transform 0.2s var(--ease);
+  }
+
+  a.contact-card:hover {
+    border-color: var(--sand-300);
+    box-shadow: var(--shadow);
+    transform: translateY(-2px);
+  }
+
+  .contact-card small {
+    display: block;
+    font-size: 0.8125rem;
+    color: var(--ink-soft);
+  }
+
+  .contact-card strong {
+    font-size: 1.0625rem;
+    color: var(--navy-900);
+  }
+
+  .contact-card__address {
+    font-size: 0.9875rem !important;
+    line-height: 1.4;
+  }
+
+  .contact-card__icon {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--navy-900);
+    color: var(--gold-300);
+  }
+
+  .contact-card__icon--wa {
+    background: #1c7c4f;
+    color: var(--white);
+  }
+
+  .contact__form {
+    display: grid;
+    gap: 1.1rem;
+    padding: clamp(1.25rem, 3.5vw, 2.25rem);
+    border-radius: var(--radius-lg);
+    background: var(--white);
+    box-shadow: var(--shadow);
+  }
+
+  .contact__form h3 {
+    font-size: 1.5rem;
+  }
+
+  .contact__row {
+    display: grid;
+    gap: 1.1rem;
+  }
+
+  .contact__legal {
+    font-size: 0.8125rem;
+    color: var(--ink-soft);
+  }
+
+  @media (min-width: 560px) {
+    .contact__row {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .contact {
+      grid-template-columns: 1fr 1.05fr;
+    }
+  }
+</style>

@@ -1,0 +1,161 @@
+---
+import { reviews, reviewsPeriod } from '../data/reviews';
+import { site } from '../config/site';
+import SectionHeading from './SectionHeading.astro';
+import Icon from './Icon.astro';
+
+const initials = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]!.toUpperCase())
+    .join('');
+
+const formatDate = (iso?: string) =>
+  iso ? new Date(`${iso}T12:00:00`).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) : null;
+---
+
+<section id="avaliacoes" class="section" aria-labelledby="avaliacoes-title">
+  <div class="container">
+    <div class="reviews__head">
+      <SectionHeading eyebrow="Avaliações" title="A experiência de quem já se hospedou conosco." id="avaliacoes-title">
+        Depoimentos históricos de hóspedes, publicados entre {reviewsPeriod}.
+      </SectionHeading>
+      <a href={site.links.reviews} class="btn btn--outline reviews__link" target="_blank" rel="noopener">
+        Ver avaliações <Icon name="external" size={18} />
+        <span class="visually-hidden">(abre em nova aba)</span>
+      </a>
+    </div>
+
+    <ul class="reviews" role="list">
+      {
+        reviews.map((review) => (
+          <li class="review" data-reveal>
+            <figure>
+              <div class="review__rating" role="img" aria-label={`Nota ${review.rating} de 5`}>
+                {Array.from({ length: 5 }, (_, i) => (
+                  <Icon name="star" size={18} class={i < review.rating ? 'is-on' : 'is-off'} />
+                ))}
+              </div>
+              <blockquote>
+                <p>“{review.text}”</p>
+              </blockquote>
+              <figcaption>
+                <span class="review__avatar" aria-hidden="true">
+                  {initials(review.author)}
+                </span>
+                <span>
+                  <strong>{review.author}</strong>
+                  <small>{formatDate(review.date) ?? `Publicada entre ${reviewsPeriod}`}</small>
+                </span>
+              </figcaption>
+            </figure>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>
+
+<style>
+  .reviews__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 0 2rem;
+  }
+
+  .reviews__link {
+    margin-bottom: clamp(2rem, 5vw, 3.25rem);
+  }
+
+  .reviews {
+    columns: 1;
+    column-gap: 1.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .review {
+    break-inside: avoid;
+    margin-bottom: 1.25rem;
+  }
+
+  .review figure {
+    display: grid;
+    gap: 1rem;
+    margin: 0;
+    padding: 1.6rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--white);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .review__rating {
+    display: flex;
+    gap: 0.15rem;
+  }
+
+  .review__rating :global(.is-on) {
+    color: var(--gold-500);
+    fill: var(--gold-400);
+  }
+
+  .review__rating :global(.is-off) {
+    color: var(--sand-300);
+  }
+
+  blockquote {
+    margin: 0;
+    font-size: 1.0625rem;
+    color: var(--ink);
+  }
+
+  figcaption {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+  }
+
+  figcaption strong {
+    display: block;
+    color: var(--navy-900);
+    line-height: 1.3;
+  }
+
+  figcaption small {
+    color: var(--ink-soft);
+    font-size: 0.8125rem;
+  }
+
+  .review__avatar {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--sand-100);
+    color: var(--navy-800);
+    font-weight: 700;
+    font-size: 0.9375rem;
+  }
+
+  @media (min-width: 700px) {
+    .reviews {
+      columns: 2;
+    }
+  }
+
+  @media (min-width: 1080px) {
+    .reviews {
+      columns: 3;
+    }
+  }
+</style>

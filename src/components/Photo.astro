@@ -1,0 +1,100 @@
+---
+/**
+ * Exibe uma foto oficial de src/assets/fotos ou, se o arquivo ainda não
+ * existir, uma moldura identificada como "Foto pendente".
+ */
+import { Picture } from 'astro:assets';
+import { getPhoto } from '../lib/photos';
+import { site } from '../config/site';
+import Icon from './Icon.astro';
+
+interface Props {
+  file: string;
+  alt: string;
+  /** Rótulo exibido na moldura de foto pendente. */
+  placeholderLabel?: string;
+  widths?: number[];
+  sizes?: string;
+  loading?: 'lazy' | 'eager';
+  fetchpriority?: 'high' | 'auto';
+  class?: string;
+}
+
+const {
+  file,
+  alt,
+  placeholderLabel,
+  widths = [480, 800, 1200],
+  sizes = '(min-width: 1024px) 33vw, 100vw',
+  loading = 'lazy',
+  fetchpriority,
+  class: className,
+} = Astro.props;
+
+const image = getPhoto(file);
+// Nunca amplia a imagem além do tamanho original.
+const usableWidths = image ? widths.filter((w) => w <= image.width) : [];
+if (image && usableWidths.length === 0) usableWidths.push(image.width);
+---
+
+{
+  image ? (
+    <Picture
+      src={image}
+      alt={alt}
+      widths={usableWidths}
+      sizes={sizes}
+      formats={['avif', 'webp']}
+      loading={loading}
+      decoding={loading === 'eager' ? 'sync' : 'async'}
+      fetchpriority={fetchpriority}
+      class={className}
+    />
+  ) : site.showPhotoPlaceholders ? (
+    <div class:list={['photo-placeholder', className]} role="img" aria-label={`Foto pendente: ${placeholderLabel ?? alt}`} data-placeholder={file}>
+      <Icon name="image" size={28} />
+      <span class="photo-placeholder__title">Foto pendente</span>
+      <span class="photo-placeholder__label">{placeholderLabel ?? alt}</span>
+      <code class="photo-placeholder__file">{file}</code>
+    </div>
+  ) : null
+}
+
+<style>
+  .photo-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    width: 100%;
+    height: 100%;
+    min-height: 160px;
+    padding: 1rem;
+    text-align: center;
+    color: var(--navy-700);
+    background:
+      repeating-linear-gradient(-45deg, transparent 0 14px, rgb(23 50 90 / 0.035) 14px 28px),
+      var(--sand-200);
+    border: 1.5px dashed var(--sand-300);
+  }
+
+  .photo-placeholder__title {
+    margin-top: 0.35rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .photo-placeholder__label {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    color: var(--navy-900);
+  }
+
+  .photo-placeholder__file {
+    font-size: 0.75rem;
+    color: var(--ink-soft);
+  }
+</style>

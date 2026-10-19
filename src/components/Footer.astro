@@ -1,0 +1,179 @@
+---
+import { site, phoneHref, whatsappUrl } from '../config/site';
+import { navigation } from '../data/navigation';
+import Logo from './Logo.astro';
+import Icon from './Icon.astro';
+
+const year = new Date().getFullYear();
+const waLink = whatsappUrl('Olá! Gostaria de informações sobre hospedagem no Hotel Triunfo.');
+---
+
+<footer class="footer">
+  <div class="container footer__grid">
+    <div class="footer__brand">
+      <Logo tone="light" />
+      <p>
+        Hotel econômico no centro de Londrina, há mais de 60 anos recebendo hóspedes com acolhimento, praticidade e
+        economia.
+      </p>
+      <a href="/#reservas" class="btn btn--primary btn--sm">Faça sua reserva</a>
+    </div>
+
+    <nav aria-label="Rodapé">
+      <h2 class="footer__title">Navegação</h2>
+      <ul role="list">
+        {
+          navigation.map((item) => (
+            <li>
+              <a href={item.href}>{item.label}</a>
+            </li>
+          ))
+        }
+        <li><a href="/#reservas">Reservas</a></li>
+        <li><a href="/#duvidas">Dúvidas frequentes</a></li>
+      </ul>
+    </nav>
+
+    <div>
+      <h2 class="footer__title">Atendimento</h2>
+      <ul role="list" class="footer__contacts">
+        <li>
+          <Icon name="phone" size={18} />
+          <a href={phoneHref}>{site.contact.phone.display}</a>
+        </li>
+        <li>
+          <Icon name="whatsapp" size={18} />
+          <a href={waLink} target="_blank" rel="noopener">{site.contact.whatsapp.display} (WhatsApp)</a>
+        </li>
+        <li>
+          <Icon name="clock" size={18} />
+          <span>{site.contact.hours}</span>
+        </li>
+      </ul>
+    </div>
+
+    <div>
+      <h2 class="footer__title">Endereço</h2>
+      <address class="footer__contacts">
+        <Icon name="mapPin" size={18} />
+        <a href={site.links.maps} target="_blank" rel="noopener">
+          {site.address.street}<br />
+          {site.address.district}, {site.address.city} - {site.address.state}<br />
+          CEP {site.address.postalCode}
+        </a>
+      </address>
+    </div>
+  </div>
+
+  <div class="footer__bottom">
+    <div class="container footer__bottom-inner">
+      <p>© {year} {site.name}. Todos os direitos reservados.</p>
+      <a href="/politica-de-privacidade/">Política de Privacidade</a>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    background: var(--navy-950);
+    color: rgb(245 239 229 / 0.78);
+    font-size: 0.9375rem;
+  }
+
+  .footer__grid {
+    display: grid;
+    gap: 2.5rem;
+    padding-block: clamp(3rem, 7vw, 4.5rem);
+  }
+
+  .footer__brand {
+    display: grid;
+    gap: 1.1rem;
+    align-content: start;
+    justify-items: start;
+    max-width: 22rem;
+  }
+
+  .footer__title {
+    margin-bottom: 1rem;
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gold-300);
+  }
+
+  .footer ul {
+    display: grid;
+    gap: 0.6rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .footer a {
+    color: var(--white);
+    text-decoration: none;
+  }
+
+  .footer a:hover {
+    color: var(--gold-300);
+    text-decoration: underline;
+  }
+
+  .footer__brand .btn {
+    color: var(--navy-950);
+  }
+
+  .footer__brand .btn:hover {
+    color: var(--navy-950);
+    text-decoration: none;
+  }
+
+  .footer__contacts li,
+  address.footer__contacts {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    font-style: normal;
+    line-height: 1.55;
+  }
+
+  .footer__contacts :global(svg) {
+    flex: none;
+    margin-top: 0.2rem;
+    color: var(--gold-300);
+  }
+
+  .footer__bottom {
+    border-top: 1px solid rgb(255 255 255 / 0.1);
+  }
+
+  .footer__bottom-inner {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.5rem 1.5rem;
+    padding-block: 1.25rem;
+    font-size: 0.875rem;
+  }
+
+  @media (min-width: 700px) {
+    .footer__grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .footer__grid {
+      grid-template-columns: 1.4fr 1fr 1.1fr 1.1fr;
+    }
+  }
+
+  @media (max-width: 767px) {
+    .footer {
+      padding-bottom: 72px;
+    }
+  }
+</style>
