@@ -1,6 +1,6 @@
 ---
-import '@fontsource-variable/fraunces/wght.css';
-import '@fontsource-variable/figtree/wght.css';
+import '@fontsource-variable/manrope/wght.css';
+import '@fontsource-variable/inter/wght.css';
 import '../styles/global.css';
 import { hotel } from '../config/hotel';
 import { withBase } from '../lib/url';
@@ -8,8 +8,8 @@ import { demoMode } from '../config/flags';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import FloatingContact from '../components/FloatingContact.astro';
-import frauncesLatin from '@fontsource-variable/fraunces/files/fraunces-latin-wght-normal.woff2?url';
-import figtreeLatin from '@fontsource-variable/figtree/files/figtree-latin-wght-normal.woff2?url';
+import manropeLatin from '@fontsource-variable/manrope/files/manrope-latin-wght-normal.woff2?url';
+import interLatin from '@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url';
 
 interface Props {
   title: string;
@@ -74,8 +74,8 @@ const lodging = {
     <meta name="geo.region" content="BR-PR" />
     <meta name="geo.placename" content="Londrina" />
 
-    <link rel="preload" href={frauncesLatin} as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href={figtreeLatin} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={manropeLatin} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={interLatin} as="font" type="font/woff2" crossorigin />
     <link rel="icon" href={withBase('/favicon.svg')} type="image/svg+xml" />
     <link rel="icon" href={withBase('/favicon-32.png')} sizes="32x32" type="image/png" />
     <link rel="apple-touch-icon" href={withBase('/apple-touch-icon.png')} />

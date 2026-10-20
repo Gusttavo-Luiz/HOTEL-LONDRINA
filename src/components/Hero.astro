@@ -9,81 +9,94 @@ import Icon from './Icon.astro';
 import BookingWidget from './react/BookingWidget';
 
 const hasPhoto = Boolean(getPhoto(featuredPhotos.hero.file));
+const rating = hotel.googleRating.value.toLocaleString('pt-BR', { minimumFractionDigits: 1 });
 ---
 
 <section id="inicio" class:list={['hero', { 'hero--photo': hasPhoto }]} aria-labelledby="hero-title">
   <div class="hero__media">
     {
       hasPhoto ? (
-        <Photo
-          file={featuredPhotos.hero.file}
-          alt={featuredPhotos.hero.alt}
-          widths={[640, 1024, 1600, 2200]}
-          sizes="100vw"
-          priority
-        />
+        <Photo file={featuredPhotos.hero.file} alt={featuredPhotos.hero.alt} widths={[640, 1024, 1600, 2200]} sizes="100vw" priority />
       ) : (
-        <div class="hero__brand-bg" aria-hidden="true" />
+        <div class="hero__brand-bg" aria-hidden="true">
+          <svg class="hero__arcs" viewBox="0 0 800 800" preserveAspectRatio="xMidYMid slice">
+            {[120, 200, 280, 360, 440].map((r) => <circle cx="640" cy="160" r={r} />)}
+          </svg>
+        </div>
       )
     }
   </div>
+
+  {
+    !hasPhoto && showProvisional && (
+      <p class="hero__dev dev-badge">
+        Foto pendente: <code>{featuredPhotos.hero.file}</code>
+      </p>
+    )
+  }
 
   <div class="container hero__inner">
     <div class="hero__content">
       <p class="hero__kicker">
         <Icon name="mapPin" size={16} /> Centro de {hotel.address.city} · {hotel.address.state}
       </p>
-      <h1 id="hero-title">Sua estadia em Londrina com conforto, praticidade e economia.</h1>
+      <h1 id="hero-title">Sua hospedagem em Londrina com conforto e praticidade.</h1>
       <p class="hero__text">
-        Bem-vindo ao Hotel Triunfo. Uma opção tradicional no centro de Londrina, com localização estratégica para
-        facilitar sua viagem a trabalho, seus compromissos e seus passeios pela cidade.
+        Hospedagem acessível e tradicional no centro da cidade, com café da manhã incluso, Wi-Fi e estacionamento
+        gratuitos e recepção 24 horas — ideal para viagens a trabalho, compromissos e passeios.
       </p>
       <div class="hero__actions">
-        <a href="#reservar" class="btn btn--gold"><Icon name="calendar" /> Consultar disponibilidade</a>
-        <a href="#sobre" class="btn btn--light">Conhecer o hotel <Icon name="arrowRight" /></a>
+        <a href="#reservar" class="btn btn--gold"><Icon name="calendar" /> Faça sua reserva</a>
+        <a href="#sobre" class="btn btn--light">Conheça o hotel <Icon name="arrowRight" /></a>
       </div>
       <ul class="hero__highlights" role="list" aria-label="Destaques">
-        {heroHighlights.map((item) => <li><Icon name={item.icon} size={18} /> {item.label}</li>)}
+        {heroHighlights.map((item) => <li><Icon name={item.icon} size={17} /> {item.label}</li>)}
       </ul>
-      <p class="hero__note">* Conforme as condições da hospedagem.</p>
     </div>
 
-    {
-      !hasPhoto && showProvisional && (
-        <div class="hero__dev-slot">
-          <Photo file={featuredPhotos.hero.file} alt={featuredPhotos.hero.alt} label="Foto principal (fachada ou acomodação)" />
-        </div>
-      )
-    }
+    <aside class="hero__facts" aria-label="Informações rápidas">
+      <a class="hero__fact hero__fact--rating" href={hotel.links.googleReviews} target="_blank" rel="noopener">
+        <span class="hero__fact-value">{rating}<small>/5</small></span>
+        <span class="hero__fact-label">
+          Nota no Google<br />{hotel.googleRating.count.toLocaleString('pt-BR')} avaliações
+          <span class="visually-hidden">(abre em nova aba)</span>
+        </span>
+      </a>
+      <div class="hero__fact">
+        <span class="hero__fact-value">{formatBRL(hotel.referenceRate.amount)}<small>*</small></span>
+        <span class="hero__fact-label">Diária de referência</span>
+      </div>
+      <div class="hero__fact">
+        <span class="hero__fact-value">24h</span>
+        <span class="hero__fact-label">Recepção todos os dias</span>
+      </div>
+    </aside>
   </div>
 
   <div class="container hero__booking" id="reservar">
-    <div class="hero__booking-head">
-      <h2 class="hero__booking-title">Consulte sua hospedagem</h2>
-      <p>
-        Diária de referência <strong>{formatBRL(hotel.referenceRate.amount)}</strong><span aria-hidden="true">*</span>
-        <span class="visually-hidden">({hotel.referenceRate.note})</span>
-      </p>
-    </div>
+    <h2 class="hero__booking-title">Faça sua reserva</h2>
     <BookingWidget client:load />
-    <p class="hero__rate-note" aria-hidden="true">* {hotel.referenceRate.note}</p>
+    <p class="hero__notes">
+      * {hotel.referenceRate.note} Café da manhã incluso conforme as condições da hospedagem.
+    </p>
   </div>
 </section>
 
 <style>
   .hero {
+    --band: clamp(5.5rem, 12vw, 7rem); /* faixa clara sob o cartão de reserva */
     position: relative;
     isolation: isolate;
     color: var(--white);
-    background: var(--navy-900);
-    padding-bottom: clamp(2rem, 5vw, 3rem);
+    background: var(--offwhite);
   }
 
   .hero__media {
     position: absolute;
-    inset: 0 0 clamp(6rem, 14vw, 9rem);
+    inset: 0 0 var(--band);
     z-index: -1;
     overflow: hidden;
+    background: var(--grad-navy);
   }
 
   .hero__media :global(picture),
@@ -93,115 +106,170 @@ const hasPhoto = Boolean(getPhoto(featuredPhotos.hero.file));
     object-fit: cover;
   }
 
-  .hero:not(.hero--photo) .hero__media {
-    inset: 0;
-  }
-
+  /* Sobreposição escura para leitura sobre a foto real */
   .hero--photo .hero__media::after {
     content: '';
     position: absolute;
     inset: 0;
     background:
-      linear-gradient(90deg, rgb(11 26 48 / 0.86) 0%, rgb(11 26 48 / 0.55) 50%, rgb(11 26 48 / 0.2) 100%),
-      linear-gradient(0deg, rgb(11 26 48 / 0.6), transparent 40%);
+      linear-gradient(95deg, rgb(15 29 40 / 0.9) 0%, rgb(15 29 40 / 0.62) 50%, rgb(15 29 40 / 0.35) 100%),
+      linear-gradient(0deg, rgb(15 29 40 / 0.55), transparent 45%);
   }
 
   .hero__brand-bg {
     position: absolute;
     inset: 0;
     background:
-      radial-gradient(ellipse at 80% 10%, rgb(207 169 95 / 0.14), transparent 55%),
-      linear-gradient(160deg, var(--navy-800), var(--navy-950));
+      radial-gradient(ellipse 55% 60% at 82% 18%, rgb(198 165 107 / 0.16), transparent 70%),
+      radial-gradient(ellipse 60% 70% at 0% 100%, rgb(42 74 96 / 0.6), transparent 70%);
   }
 
-  .hero__brand-bg::after {
-    content: '';
+  .hero__arcs {
     position: absolute;
     inset: 0;
-    background-image: radial-gradient(rgb(255 255 255 / 0.07) 1px, transparent 1px);
-    background-size: 22px 22px;
-    mask-image: linear-gradient(110deg, transparent 30%, #000 85%);
+    width: 100%;
+    height: 100%;
+    fill: none;
+    stroke: rgb(198 165 107 / 0.13);
+    stroke-width: 1;
+  }
+
+  .hero__dev {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 2;
   }
 
   .hero__inner {
     display: grid;
-    gap: 2rem;
+    gap: 2.25rem;
     align-items: center;
-    min-height: min(68svh, 640px);
-    padding-block: clamp(2.5rem, 7vw, 5.5rem) clamp(2rem, 5vw, 3.5rem);
+    padding-block: clamp(3rem, 8vw, 6rem) clamp(2.25rem, 5vw, 3.5rem);
   }
 
   .hero__content {
     display: grid;
-    gap: 1.25rem;
-    max-width: 41rem;
+    gap: 1.35rem;
+    max-width: 40rem;
   }
 
   .hero__kicker {
     display: inline-flex;
     align-items: center;
     gap: 0.45rem;
-    font-size: 0.875rem;
+    font-family: var(--font-display);
+    font-size: 0.8rem;
     font-weight: 700;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
     color: var(--gold-300);
   }
 
   h1 {
-    font-size: clamp(2.2rem, 5.4vw, 3.9rem);
-    font-weight: 500;
-    line-height: 1.06;
+    font-size: clamp(2.15rem, 5.2vw, 3.75rem);
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -0.035em;
     color: var(--white);
   }
 
   .hero__text {
-    max-width: 36rem;
-    font-size: clamp(1.0625rem, 1.8vw, 1.2rem);
-    color: rgb(244 238 228 / 0.88);
+    max-width: 35rem;
+    font-size: clamp(1.0625rem, 1.7vw, 1.175rem);
+    color: rgb(255 255 255 / 0.8);
   }
 
   .hero__actions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;
+    margin-top: 0.25rem;
   }
 
   .hero__highlights {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem 1.25rem;
+    gap: 0.5rem;
     margin: 0.5rem 0 0;
-    padding: 1.1rem 0 0;
-    border-top: 1px solid rgb(255 255 255 / 0.16);
+    padding: 0;
     list-style: none;
-    font-size: 0.9375rem;
-    font-weight: 600;
   }
 
   .hero__highlights li {
     display: inline-flex;
     align-items: center;
-    gap: 0.45rem;
+    gap: 0.4rem;
+    padding: 0.4rem 0.8rem;
+    border: 1px solid rgb(255 255 255 / 0.14);
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.05);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: rgb(255 255 255 / 0.9);
   }
 
   .hero__highlights :global(svg) {
+    color: var(--gold-400);
+  }
+
+  .hero__facts {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border: 1px solid rgb(255 255 255 / 0.14);
+    border-radius: var(--radius-lg);
+    background: rgb(255 255 255 / 0.05);
+    backdrop-filter: blur(10px);
+    overflow: hidden;
+  }
+
+  /* Sobre foto real, o cartão fica mais escuro para manter o contraste. */
+  .hero--photo .hero__facts,
+  .hero--photo .hero__highlights li {
+    background: rgb(15 29 40 / 0.55);
+  }
+
+  .hero__fact {
+    display: grid;
+    align-content: center;
+    gap: 0.35rem;
+    padding: 1.1rem 1rem;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .hero__fact + .hero__fact {
+    border-left: 1px solid rgb(255 255 255 / 0.12);
+  }
+
+  a.hero__fact {
+    transition: background-color 0.2s var(--ease);
+  }
+
+  a.hero__fact:hover {
+    background: rgb(255 255 255 / 0.06);
+  }
+
+  .hero__fact-value {
+    font-family: var(--font-display);
+    font-size: clamp(1.35rem, 3.2vw, 1.9rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    color: var(--white);
+  }
+
+  .hero__fact-value small {
+    margin-left: 0.1rem;
+    font-size: 0.55em;
+    font-weight: 600;
     color: var(--gold-300);
   }
 
-  .hero__note {
-    margin-top: -0.6rem;
+  .hero__fact-label {
     font-size: 0.8125rem;
-    color: rgb(244 238 228 / 0.7);
-  }
-
-  .hero__dev-slot {
-    display: none;
-  }
-
-  .hero__dev-slot :global(.photo-pending) {
-    aspect-ratio: 4 / 5;
-    border-radius: var(--radius-lg);
+    line-height: 1.35;
+    color: rgb(255 255 255 / 0.72);
   }
 
   .hero__booking {
@@ -210,41 +278,54 @@ const hasPhoto = Boolean(getPhoto(featuredPhotos.hero.file));
     gap: 0.75rem;
   }
 
-  .hero__booking-head {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 0.25rem 1rem;
-  }
-
   .hero__booking-title {
-    font-size: 1.35rem;
+    font-size: 1.125rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
     color: var(--white);
   }
 
-  .hero__booking-head p {
-    font-size: 0.9375rem;
-    color: rgb(244 238 228 / 0.85);
-  }
-
-  .hero__booking-head strong {
-    font-size: 1.125rem;
-    color: var(--gold-300);
-  }
-
-  .hero__rate-note {
+  .hero__notes {
     font-size: 0.8125rem;
-    color: rgb(244 238 228 / 0.7);
+    color: var(--gray-600);
   }
 
-  @media (min-width: 960px) {
+  @media (min-width: 1024px) {
     .hero__inner {
-      grid-template-columns: 1.4fr 1fr;
+      grid-template-columns: 1.45fr 1fr;
+      min-height: min(62svh, 600px);
     }
 
-    .hero__dev-slot {
-      display: block;
+    .hero__facts {
+      grid-template-columns: 1fr;
+      max-width: 340px;
+      justify-self: end;
+    }
+
+    .hero__fact {
+      padding: 1.35rem 1.5rem;
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .hero__fact-value {
+      min-width: 5.5rem;
+    }
+
+    .hero__fact + .hero__fact {
+      border-left: 0;
+      border-top: 1px solid rgb(255 255 255 / 0.12);
+    }
+  }
+
+  @media (max-width: 479px) {
+    .hero__fact {
+      padding: 0.95rem 0.7rem;
+    }
+
+    .hero__fact-label {
+      font-size: 0.75rem;
     }
   }
 </style>

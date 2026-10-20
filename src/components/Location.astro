@@ -6,7 +6,7 @@ import Icon from './Icon.astro';
 import MapEmbed from './react/MapEmbed';
 ---
 
-<section id="localizacao" class="section" aria-labelledby="localizacao-title">
+<section id="localizacao" class="section section--plain" aria-labelledby="localizacao-title">
   <div class="container location">
     <div class="location__info">
       <SectionHeading eyebrow="Localização" title="No centro de Londrina, perto de tudo." id="localizacao-title">
@@ -73,8 +73,8 @@ import MapEmbed from './react/MapEmbed';
   .location__address strong {
     display: block;
     font-family: var(--font-display);
-    font-size: 1.3rem;
-    font-weight: 600;
+    font-size: 1.2rem;
+    font-weight: 750;
     color: var(--navy-900);
   }
 
@@ -174,7 +174,8 @@ import MapEmbed from './react/MapEmbed';
 
   .location__map :global(.map-embed__title) {
     font-family: var(--font-display);
-    font-size: 1.35rem;
+    font-weight: 750;
+    font-size: 1.25rem;
     color: var(--navy-900);
   }
 
