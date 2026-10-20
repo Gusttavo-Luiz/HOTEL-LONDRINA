@@ -1,14 +1,13 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { site, fullAddress, phoneHref, whatsappUrl } from '../config/site';
+import { hotel, fullAddress, phoneHref } from '../config/hotel';
 
-const updated = '19 de outubro de 2026';
-const usesEndpoint = Boolean(site.forms.contactEndpoint);
+const updated = '20 de outubro de 2026';
 ---
 
 <BaseLayout
   title="Política de Privacidade | Hotel Triunfo Londrina"
-  description="Saiba como o Hotel Triunfo Londrina trata os dados pessoais informados nos formulários de reserva e contato do site, conforme a LGPD."
+  description="Como o Hotel Triunfo trata os dados pessoais enviados pelo site, conforme a Lei Geral de Proteção de Dados (LGPD)."
 >
   <article class="section legal">
     <div class="container legal__inner">
@@ -17,67 +16,53 @@ const usesEndpoint = Boolean(site.forms.contactEndpoint);
       <p class="legal__updated">Última atualização: {updated}</p>
 
       <p>
-        Esta política explica como o <strong>{site.name}</strong>, localizado na {fullAddress}, trata os dados pessoais
-        informados neste site, em conformidade com a Lei Geral de Proteção de Dados Pessoais (Lei nº 13.709/2018 — LGPD).
+        Esta política explica como o <strong>{hotel.name}</strong> ({fullAddress}) trata os dados pessoais informados
+        neste site, conforme a Lei nº 13.709/2018 (LGPD).
       </p>
 
-      <h2>1. Quais dados coletamos</h2>
-      <p>Coletamos apenas os dados que você informa voluntariamente nos formulários do site:</p>
+      <h2>1. Dados coletados</h2>
+      <p>Coletamos apenas o que você informa no formulário de solicitação:</p>
       <ul>
-        <li><strong>Solicitação de reserva:</strong> datas de check-in e check-out, número de hóspedes e de quartos, nome, telefone e observações.</li>
-        <li><strong>Contato:</strong> nome, e-mail, telefone (opcional) e mensagem.</li>
+        <li>nome e um contato para retorno (e-mail ou telefone);</li>
+        <li>datas de entrada e saída, quantidade de adultos e crianças e acomodação de interesse, quando informados;</li>
+        <li>a mensagem que você escrever.</li>
       </ul>
-      <p>O site não utiliza cookies de publicidade nem ferramentas de rastreamento próprias.</p>
-
-      <h2>2. Para que usamos os dados</h2>
       <p>
-        Os dados são usados exclusivamente para responder à sua solicitação, verificar disponibilidade, enviar
-        informações sobre a hospedagem e realizar a reserva, quando confirmada por você. Não vendemos nem
-        compartilhamos seus dados para fins de marketing.
+        Por segurança, o servidor registra temporariamente o endereço IP de quem envia o formulário, apenas em memória,
+        para limitar envios automatizados (spam).
       </p>
 
-      <h2>3. Como os dados são enviados</h2>
-      {
-        usesEndpoint ? (
-          <p>
-            O formulário de contato envia os dados por conexão segura (HTTPS) ao canal de atendimento do hotel. A
-            solicitação de reserva é preparada como mensagem no WhatsApp, e o envio só acontece quando você confirma no
-            aplicativo.
-          </p>
-        ) : (
-          <p>
-            Os formulários não armazenam dados neste site. Ao enviar, o conteúdo é preparado como mensagem no WhatsApp
-            oficial do hotel ({site.contact.whatsapp.display}), e o envio só acontece quando você confirma no aplicativo.
-            O uso do WhatsApp está sujeito à política de privacidade do próprio serviço (Meta).
-          </p>
-        )
-      }
-
-      <h2>4. Serviços de terceiros</h2>
+      <h2>2. Finalidade e base legal</h2>
       <p>
-        A seção de localização exibe um mapa do Google Maps, carregado somente quando a seção é exibida. O Google pode
-        coletar dados de navegação conforme a sua própria política de privacidade. Os links para Google Maps e WhatsApp
-        abrem os respectivos serviços.
+        Os dados são usados exclusivamente para responder à sua solicitação, informar disponibilidade e valores e, se
+        você desejar, realizar a reserva. A base legal é o seu consentimento e os procedimentos preliminares a um
+        contrato de hospedagem (art. 7º, I e V, da LGPD). Não vendemos nem compartilhamos seus dados para marketing.
       </p>
 
-      <h2>5. Por quanto tempo guardamos</h2>
+      <h2>3. Armazenamento e acesso</h2>
       <p>
-        Mantemos as informações pelo tempo necessário para atender à sua solicitação e cumprir obrigações legais
-        relacionadas à hospedagem.
+        As solicitações ficam armazenadas no servidor do site, com acesso restrito à equipe do hotel por usuário e senha,
+        e podem ser encaminhadas ao e-mail da recepção. As solicitações são excluídas automaticamente após 180 dias, ou
+        antes, mediante pedido.
       </p>
 
-      <h2>6. Seus direitos</h2>
+      <h2>4. Cookies e serviços de terceiros</h2>
       <p>
-        Você pode solicitar, a qualquer momento, a confirmação do tratamento, o acesso, a correção ou a exclusão dos seus
-        dados, além das demais garantias previstas no art. 18 da LGPD.
+        Este site não utiliza cookies de publicidade nem ferramentas de rastreamento. O mapa do Google só é carregado
+        quando você clica em “Carregar mapa”; a partir daí, o Google pode coletar dados conforme a política de
+        privacidade dele. Os links para Google Maps, avaliações do Google e WhatsApp abrem os respectivos serviços.
       </p>
 
-      <h2>7. Fale conosco</h2>
+      <h2>5. Seus direitos</h2>
       <p>
-        Para exercer seus direitos ou tirar dúvidas sobre esta política, entre em contato pelo telefone
-        <a href={phoneHref}>{site.contact.phone.display}</a>, pelo WhatsApp
-        <a href={whatsappUrl('Olá! Tenho uma dúvida sobre a Política de Privacidade do site.')} target="_blank" rel="noopener">{site.contact.whatsapp.display}</a>
-        ou pessoalmente na recepção, que funciona 24 horas.
+        Você pode solicitar confirmação, acesso, correção, anonimização ou exclusão dos seus dados e revogar o
+        consentimento a qualquer momento (art. 18 da LGPD).
+      </p>
+
+      <h2>6. Contato</h2>
+      <p>
+        Para exercer seus direitos ou tirar dúvidas, ligue para <a href={phoneHref}>{hotel.phone.display}</a> ou procure a
+        recepção, que funciona 24 horas.
       </p>
 
       <p class="legal__back"><a href="/" class="btn btn--outline">Voltar ao início</a></p>
@@ -87,9 +72,9 @@ const usesEndpoint = Boolean(site.forms.contactEndpoint);
 
 <style>
   .legal__inner {
-    max-width: 46rem;
     display: grid;
     gap: 1rem;
+    max-width: 46rem;
   }
 
   h1 {
@@ -101,16 +86,16 @@ const usesEndpoint = Boolean(site.forms.contactEndpoint);
     font-size: 1.4rem;
   }
 
-  .legal__updated {
-    font-size: 0.9375rem;
-    color: var(--ink-soft);
-  }
-
   ul {
+    display: grid;
+    gap: 0.35rem;
     margin: 0;
     padding-left: 1.25rem;
-    display: grid;
-    gap: 0.4rem;
+  }
+
+  .legal__updated {
+    font-size: 0.9375rem;
+    color: var(--gray-600);
   }
 
   .legal__back {

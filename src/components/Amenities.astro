@@ -1,0 +1,79 @@
+---
+import { amenities } from '../content/amenities';
+import SectionHeading from './SectionHeading.astro';
+import Icon from './Icon.astro';
+---
+
+<section id="comodidades" class="section section--sand" aria-labelledby="comodidades-title">
+  <div class="container">
+    <SectionHeading eyebrow="Comodidades e serviços" title="O essencial para uma estadia sem preocupações." id="comodidades-title" align="center" />
+
+    <ul class="amenities" role="list">
+      {
+        amenities.map((item) => (
+          <li class="amenity" data-reveal>
+            <span class="amenity__icon">
+              <Icon name={item.icon} size={24} />
+            </span>
+            <div>
+              <h3>{item.title}</h3>
+              <p>{item.text}</p>
+            </div>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>
+
+<style>
+  .amenities {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--sand-300);
+    border-left: 1px solid var(--sand-300);
+  }
+
+  .amenity {
+    display: flex;
+    gap: 1.1rem;
+    padding: clamp(1.4rem, 3vw, 2rem);
+    border-right: 1px solid var(--sand-300);
+    border-bottom: 1px solid var(--sand-300);
+    transition: background-color 0.3s var(--ease);
+  }
+
+  .amenity:hover {
+    background: rgb(255 255 255 / 0.55);
+  }
+
+  .amenity__icon {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: 1.5px solid var(--gold-400);
+    color: var(--navy-900);
+  }
+
+  h3 {
+    margin-bottom: 0.35rem;
+    font-size: 1.2rem;
+  }
+
+  p {
+    font-size: 0.9875rem;
+    color: var(--gray-600);
+  }
+
+  @media (min-width: 1024px) {
+    .amenities {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+</style>

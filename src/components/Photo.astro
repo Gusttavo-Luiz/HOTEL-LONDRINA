@@ -1,40 +1,39 @@
 ---
 /**
- * Exibe uma foto oficial de src/assets/fotos ou, se o arquivo ainda não
- * existir, uma moldura identificada como "Foto pendente".
+ * Foto oficial de src/assets/fotos. Sem o arquivo, mostra uma moldura
+ * "Foto pendente" somente no ambiente de desenvolvimento; em produção
+ * renderiza o slot `fallback` (ou nada).
  */
 import { Picture } from 'astro:assets';
 import { getPhoto } from '../lib/photos';
-import { site } from '../config/site';
+import { showProvisional } from '../config/flags';
 import Icon from './Icon.astro';
 
 interface Props {
   file: string;
   alt: string;
-  /** Rótulo exibido na moldura de foto pendente. */
-  placeholderLabel?: string;
+  label?: string;
   widths?: number[];
   sizes?: string;
   loading?: 'lazy' | 'eager';
-  fetchpriority?: 'high' | 'auto';
+  priority?: boolean;
   class?: string;
 }
 
 const {
   file,
   alt,
-  placeholderLabel,
+  label,
   widths = [480, 800, 1200],
   sizes = '(min-width: 1024px) 33vw, 100vw',
   loading = 'lazy',
-  fetchpriority,
+  priority = false,
   class: className,
 } = Astro.props;
 
 const image = getPhoto(file);
-// Nunca amplia a imagem além do tamanho original.
-const usableWidths = image ? widths.filter((w) => w <= image.width) : [];
-if (image && usableWidths.length === 0) usableWidths.push(image.width);
+const usable = image ? widths.filter((w) => w <= image.width) : [];
+if (image && usable.length === 0) usable.push(image.width);
 ---
 
 {
@@ -42,59 +41,59 @@ if (image && usableWidths.length === 0) usableWidths.push(image.width);
     <Picture
       src={image}
       alt={alt}
-      widths={usableWidths}
+      widths={usable}
       sizes={sizes}
       formats={['avif', 'webp']}
-      loading={loading}
-      decoding={loading === 'eager' ? 'sync' : 'async'}
-      fetchpriority={fetchpriority}
+      loading={priority ? 'eager' : loading}
+      decoding={priority ? 'sync' : 'async'}
+      fetchpriority={priority ? 'high' : undefined}
       class={className}
     />
-  ) : site.showPhotoPlaceholders ? (
-    <div class:list={['photo-placeholder', className]} role="img" aria-label={`Foto pendente: ${placeholderLabel ?? alt}`} data-placeholder={file}>
-      <Icon name="image" size={28} />
-      <span class="photo-placeholder__title">Foto pendente</span>
-      <span class="photo-placeholder__label">{placeholderLabel ?? alt}</span>
-      <code class="photo-placeholder__file">{file}</code>
+  ) : showProvisional ? (
+    <div class:list={['photo-pending', className]} role="img" aria-label={`Foto pendente: ${label ?? alt}`}>
+      <Icon name="image" size={26} />
+      <span class="photo-pending__title">Foto pendente</span>
+      <span class="photo-pending__label">{label ?? alt}</span>
+      <code>{file}</code>
     </div>
-  ) : null
+  ) : (
+    <slot name="fallback" />
+  )
 }
 
 <style>
-  .photo-placeholder {
+  .photo-pending {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.25rem;
+    gap: 0.2rem;
     width: 100%;
     height: 100%;
     min-height: 160px;
     padding: 1rem;
     text-align: center;
-    color: var(--navy-700);
-    background:
-      repeating-linear-gradient(-45deg, transparent 0 14px, rgb(23 50 90 / 0.035) 14px 28px),
-      var(--sand-200);
-    border: 1.5px dashed var(--sand-300);
+    color: #7a5200;
+    background: repeating-linear-gradient(-45deg, #fff6e0 0 14px, #fdf0cf 14px 28px);
+    border: 2px dashed #d9a521;
   }
 
-  .photo-placeholder__title {
-    margin-top: 0.35rem;
+  .photo-pending__title {
+    margin-top: 0.3rem;
     font-size: 0.75rem;
-    font-weight: 700;
+    font-weight: 800;
     letter-spacing: 0.12em;
     text-transform: uppercase;
   }
 
-  .photo-placeholder__label {
+  .photo-pending__label {
     font-family: var(--font-display);
     font-size: 1.05rem;
     color: var(--navy-900);
   }
 
-  .photo-placeholder__file {
+  code {
     font-size: 0.75rem;
-    color: var(--ink-soft);
+    color: var(--gray-600);
   }
 </style>

@@ -1,63 +1,48 @@
 ---
-import { site, fullAddress } from '../config/site';
+import { hotel, fullAddress } from '../config/hotel';
+import { pointsOfInterest } from '../content/location';
 import SectionHeading from './SectionHeading.astro';
 import Icon from './Icon.astro';
-import type { IconName } from './icons';
-
-const nearby: { icon: IconName; label: string }[] = [
-  { icon: 'bus', label: 'Terminal de ônibus' },
-  { icon: 'church', label: 'Catedral' },
-  { icon: 'store', label: 'Comércio e restaurantes' },
-  { icon: 'wallet', label: 'Bancos e farmácias' },
-  { icon: 'landmark', label: 'Museus' },
-];
+import MapEmbed from './react/MapEmbed';
 ---
 
-<section id="localizacao" class="section section--sand" aria-labelledby="localizacao-title">
+<section id="localizacao" class="section" aria-labelledby="localizacao-title">
   <div class="container location">
-    <div class="location__info" data-reveal>
-      <SectionHeading eyebrow="Localização" title="No coração de Londrina." id="localizacao-title">
-        Hospede-se no centro da cidade, perto do terminal de ônibus, da Catedral e dos principais serviços da região
-        central — ideal para resolver compromissos de trabalho, estudar ou passear sem depender de longos
-        deslocamentos.
+    <div class="location__info">
+      <SectionHeading eyebrow="Localização" title="No centro de Londrina, perto de tudo." id="localizacao-title">
+        Uma base prática para compromissos, compras e passeios, com fácil acesso aos serviços da região central.
       </SectionHeading>
 
-      <address class="location__address">
-        <Icon name="mapPin" size={26} />
+      <address class="location__address" data-reveal>
+        <span class="location__pin"><Icon name="mapPin" size={22} /></span>
         <span>
-          <strong>{site.address.street}</strong>
-          {site.address.district}, {site.address.city} - {site.address.state}<br />
-          CEP {site.address.postalCode}
+          <strong>{hotel.address.street}</strong>
+          {hotel.address.district}, {hotel.address.city} - {hotel.address.state} · CEP {hotel.address.postalCode}
         </span>
       </address>
 
-      <ul class="location__nearby" role="list" aria-label="Nas proximidades">
+      <h3 class="location__subtitle">Pontos de interesse próximos</h3>
+      <ul class="poi" role="list" data-reveal>
         {
-          nearby.map((item) => (
+          pointsOfInterest.map((p) => (
             <li>
-              <Icon name={item.icon} size={18} /> {item.label}
+              <Icon name={p.icon} size={20} />
+              <span>{p.name}</span>
+              {p.distance && <em>{p.distance}</em>}
             </li>
           ))
         }
       </ul>
 
       <div class="location__actions">
-        <a href={site.links.maps} class="btn btn--navy" target="_blank" rel="noopener">
-          <Icon name="navigation" /> Abrir no Google Maps
-          <span class="visually-hidden">(abre em nova aba)</span>
+        <a href={hotel.links.directions} class="btn btn--gold" target="_blank" rel="noopener">
+          <Icon name="navigation" /> Como chegar <span class="visually-hidden">(abre o Google Maps em nova aba)</span>
         </a>
-        <a href="#contato" class="btn btn--outline">Fale conosco</a>
       </div>
     </div>
 
-    <div class="location__map" data-reveal>
-      <iframe
-        src={site.links.mapsEmbed}
-        title={`Mapa: ${fullAddress}`}
-        loading="lazy"
-        referrerpolicy="no-referrer-when-downgrade"
-        allowfullscreen
-      ></iframe>
+    <div class="location__map map-embed" data-reveal>
+      <MapEmbed client:visible src={hotel.links.mapEmbed} title={`Mapa: ${fullAddress}`} />
     </div>
   </div>
 </section>
@@ -66,28 +51,23 @@ const nearby: { icon: IconName; label: string }[] = [
   .location {
     display: grid;
     gap: clamp(2rem, 5vw, 4rem);
-    align-items: center;
+    align-items: start;
   }
 
-  .location__info :global(.section-heading) {
+  .location__info :global(.heading) {
     margin-bottom: 1.75rem;
   }
 
   .location__address {
     display: flex;
     gap: 1rem;
-    padding: 1.25rem 1.4rem;
+    padding: 1.2rem 1.35rem;
+    border: 1px solid var(--line);
     border-radius: var(--radius);
     background: var(--white);
-    border: 1px solid var(--line);
     font-style: normal;
+    color: var(--gray-600);
     line-height: 1.5;
-    color: var(--ink-soft);
-  }
-
-  .location__address svg {
-    flex: none;
-    color: var(--gold-700);
   }
 
   .location__address strong {
@@ -98,51 +78,108 @@ const nearby: { icon: IconName; label: string }[] = [
     color: var(--navy-900);
   }
 
-  .location__nearby {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin: 1.25rem 0 0;
+  .location__pin {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--navy-900);
+    color: var(--gold-300);
+  }
+
+  .location__subtitle {
+    margin: 2rem 0 0.75rem;
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gold-700);
+  }
+
+  .poi {
+    margin: 0;
     padding: 0;
     list-style: none;
   }
 
-  .location__nearby li {
-    display: inline-flex;
+  .poi li {
+    display: flex;
     align-items: center;
-    gap: 0.4rem;
-    padding: 0.4rem 0.85rem;
-    border-radius: 999px;
-    background: var(--white);
-    font-size: 0.875rem;
+    gap: 0.8rem;
+    padding: 0.8rem 0;
+    border-bottom: 1px solid var(--line);
     font-weight: 600;
-    color: var(--navy-800);
+    color: var(--navy-900);
   }
 
-  .location__nearby svg {
+  .poi :global(svg) {
+    flex: none;
     color: var(--gold-700);
   }
 
+  .poi em {
+    margin-left: auto;
+    padding-left: 1rem;
+    font-size: 0.875rem;
+    font-style: normal;
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--gray-600);
+  }
+
   .location__actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
     margin-top: 1.75rem;
   }
 
   .location__map {
+    position: relative;
+    min-height: 380px;
     overflow: hidden;
-    min-height: 360px;
     border-radius: var(--radius-lg);
-    background: var(--sand-200);
+    background:
+      repeating-linear-gradient(0deg, transparent 0 39px, rgb(17 38 74 / 0.05) 39px 40px),
+      repeating-linear-gradient(90deg, transparent 0 39px, rgb(17 38 74 / 0.05) 39px 40px),
+      var(--sand-100);
     box-shadow: var(--shadow);
   }
 
-  .location__map iframe {
+  .location__map :global(.map-embed__frame) {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
-    min-height: 360px;
     border: 0;
+  }
+
+  .location__map :global(.map-embed__consent) {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    padding: 2rem;
+    text-align: center;
+    color: var(--gray-600);
+    font-size: 0.9375rem;
+  }
+
+  .location__map :global(.map-embed__consent > svg) {
+    color: var(--navy-900);
+  }
+
+  .location__map :global(.map-embed__title) {
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    color: var(--navy-900);
+  }
+
+  .location__map :global(.map-embed__consent p) {
+    max-width: 26rem;
   }
 
   @media (min-width: 960px) {
@@ -150,9 +187,10 @@ const nearby: { icon: IconName; label: string }[] = [
       grid-template-columns: 1fr 1.1fr;
     }
 
-    .location__map,
-    .location__map iframe {
-      min-height: 480px;
+    .location__map {
+      position: sticky;
+      top: calc(var(--header-h) + 1.5rem);
+      min-height: 560px;
     }
   }
 </style>

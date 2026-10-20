@@ -1,0 +1,322 @@
+---
+/**
+ * Painel da recepção: lista as solicitações enviadas pelo site.
+ * Protegido por usuário/senha (ADMIN_USER / ADMIN_PASSWORD) no middleware.
+ */
+import '@fontsource-variable/figtree/wght.css';
+import '../../styles/global.css';
+import { countByStatus, deleteRequest, listRequests, STATUSES, updateStatus, type RequestStatus } from '../../server/db';
+import { mailConfigured } from '../../server/mailer';
+import { formatDateBR, nights } from '../../lib/validation';
+import { rooms } from '../../content/rooms';
+
+export const prerender = false;
+
+const labels: Record<RequestStatus, string> = { novo: 'Novo', em_atendimento: 'Em atendimento', concluido: 'Concluído' };
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const id = Number(form.get('id'));
+  const action = String(form.get('action'));
+  let result = 'erro';
+  if (Number.isInteger(id) && id > 0) {
+    if (action === 'status' && updateStatus(id, String(form.get('status')) as RequestStatus)) result = 'atualizada';
+    if (action === 'delete' && deleteRequest(id)) result = 'excluida';
+  }
+  const back = new URL(Astro.url);
+  back.searchParams.set('resultado', result);
+  back.searchParams.set('id', String(Number.isInteger(id) ? id : 0));
+  return Astro.redirect(`${back.pathname}${back.search}`, 303);
+}
+
+// Mensagens fixas (nunca texto vindo da URL).
+const resultParam = Astro.url.searchParams.get('resultado');
+const resultId = Number(Astro.url.searchParams.get('id')) || 0;
+const flash =
+  resultParam === 'atualizada'
+    ? `Solicitação nº ${resultId} atualizada.`
+    : resultParam === 'excluida'
+      ? `Solicitação nº ${resultId} excluída.`
+      : resultParam === 'erro'
+        ? 'Não foi possível concluir a ação.'
+        : '';
+const filterParam = Astro.url.searchParams.get('status');
+const filter = STATUSES.includes(filterParam as RequestStatus) ? (filterParam as RequestStatus) : undefined;
+const requests = listRequests(filter);
+const counts = countByStatus();
+const total = counts.novo + counts.em_atendimento + counts.concluido;
+const roomName = (id: string | null) => (id ? (rooms.find((r) => r.id === id)?.name ?? id) : null);
+const formatCreated = (iso: string) =>
+  new Date(iso).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' });
+const filterHref = (status?: RequestStatus) => (status ? `/admin?status=${status}` : '/admin');
+---
+
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Solicitações | Painel Hotel Triunfo</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <header class="admin-header">
+      <div class="container admin-header__inner">
+        <strong>Hotel Triunfo · Painel da recepção</strong>
+        <a href="/">Ver site</a>
+      </div>
+    </header>
+
+    <main class="container admin">
+      <h1>Solicitações recebidas</h1>
+      {
+        !mailConfigured() && (
+          <p class="alert alert--info">
+            O envio de e-mail (SMTP) não está configurado: novas solicitações aparecem somente neste painel.
+          </p>
+        )
+      }
+      {flash && <p class="alert alert--success" role="status">{flash}</p>}
+
+      <nav class="admin-filters" aria-label="Filtrar por status">
+        <a href={filterHref()} aria-current={!filter ? 'page' : undefined}>Todas ({total})</a>
+        {
+          STATUSES.map((s) => (
+            <a href={filterHref(s)} aria-current={filter === s ? 'page' : undefined}>
+              {labels[s]} ({counts[s]})
+            </a>
+          ))
+        }
+      </nav>
+
+      {requests.length === 0 && <p class="admin-empty">Nenhuma solicitação {filter ? `com status “${labels[filter]}”` : 'até o momento'}.</p>}
+
+      <ul class="admin-list" role="list">
+        {
+          requests.map((r) => {
+            const n = r.checkIn && r.checkOut ? nights(r.checkIn, r.checkOut) : null;
+            return (
+              <li class:list={['req', `req--${r.status}`]}>
+                <div class="req__head">
+                  <span class="req__id">nº {r.id}</span>
+                  <span class="req__type">{r.subject === 'reserva' ? 'Reserva' : 'Informações'}</span>
+                  <span class="req__date">{formatCreated(r.createdAt)}</span>
+                  <span class="req__status">{labels[r.status]}</span>
+                  {r.emailSent && <span class="req__mail">e-mail enviado</span>}
+                </div>
+                <dl class="req__data">
+                  <div><dt>Nome</dt><dd>{r.name}</dd></div>
+                  <div>
+                    <dt>Contato</dt>
+                    <dd>
+                      {r.contactType === 'email' ? (
+                        <a href={`mailto:${r.contact}`}>{r.contact}</a>
+                      ) : (
+                        <a href={`tel:+55${r.contact.replace(/\D/g, '')}`}>{r.contact}</a>
+                      )}
+                    </dd>
+                  </div>
+                  {r.checkIn && r.checkOut && (
+                    <div>
+                      <dt>Estadia</dt>
+                      <dd>
+                        {formatDateBR(r.checkIn)} → {formatDateBR(r.checkOut)} ({n} {n === 1 ? 'noite' : 'noites'}) · {r.adults} adulto(s)
+                        {r.children ? `, ${r.children} criança(s)` : ''}
+                      </dd>
+                    </div>
+                  )}
+                  {roomName(r.roomId) && <div><dt>Acomodação</dt><dd>{roomName(r.roomId)}</dd></div>}
+                  {r.message && <div class="req__msg"><dt>Mensagem</dt><dd>{r.message}</dd></div>}
+                </dl>
+                <div class="req__actions">
+                  <form method="post">
+                    <input type="hidden" name="id" value={r.id} />
+                    <input type="hidden" name="action" value="status" />
+                    <label class="visually-hidden" for={`status-${r.id}`}>Status da solicitação {r.id}</label>
+                    <select class="input" id={`status-${r.id}`} name="status">
+                      {STATUSES.map((s) => <option value={s} selected={s === r.status}>{labels[s]}</option>)}
+                    </select>
+                    <button class="btn btn--navy btn--sm" type="submit">Salvar</button>
+                  </form>
+                  <form method="post" data-confirm={`Excluir definitivamente a solicitação nº ${r.id}?`}>
+                    <input type="hidden" name="id" value={r.id} />
+                    <input type="hidden" name="action" value="delete" />
+                    <button class="btn btn--outline btn--sm" type="submit">Excluir</button>
+                  </form>
+                </div>
+              </li>
+            );
+          })
+        }
+      </ul>
+      <p class="admin-note">Solicitações com mais de 180 dias são excluídas automaticamente (LGPD).</p>
+    </main>
+
+    <script>
+      document.querySelectorAll<HTMLFormElement>('form[data-confirm]').forEach((form) =>
+        form.addEventListener('submit', (e) => {
+          if (!window.confirm(form.dataset.confirm)) e.preventDefault();
+        }),
+      );
+    </script>
+  </body>
+</html>
+
+<style>
+  body {
+    background: var(--offwhite);
+  }
+
+  .admin-header {
+    background: var(--navy-900);
+    color: var(--white);
+  }
+
+  .admin-header__inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 60px;
+  }
+
+  .admin-header a {
+    color: var(--gold-300);
+  }
+
+  .admin {
+    display: grid;
+    gap: 1.25rem;
+    padding-block: 2rem 4rem;
+  }
+
+  h1 {
+    font-family: var(--font-body);
+    font-size: 1.75rem;
+    font-weight: 700;
+  }
+
+  .admin-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .admin-filters a {
+    padding: 0.45rem 0.9rem;
+    border: 1.5px solid var(--sand-300);
+    border-radius: 999px;
+    color: var(--navy-900);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .admin-filters a[aria-current='page'] {
+    border-color: var(--navy-900);
+    background: var(--navy-900);
+    color: var(--white);
+  }
+
+  .admin-list {
+    display: grid;
+    gap: 0.9rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .req {
+    display: grid;
+    gap: 0.9rem;
+    padding: 1.2rem;
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--gold-400);
+    border-radius: var(--radius);
+    background: var(--white);
+  }
+
+  .req--em_atendimento {
+    border-left-color: var(--navy-700);
+  }
+
+  .req--concluido {
+    border-left-color: var(--gray-400);
+    opacity: 0.85;
+  }
+
+  .req__head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 0.9rem;
+    align-items: center;
+    font-size: 0.875rem;
+    color: var(--gray-600);
+  }
+
+  .req__id {
+    font-weight: 800;
+    color: var(--navy-900);
+  }
+
+  .req__type,
+  .req__status,
+  .req__mail {
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    background: var(--sand-100);
+    font-weight: 700;
+    color: var(--navy-900);
+  }
+
+  .req__mail {
+    background: var(--success-bg);
+    color: var(--success);
+  }
+
+  .req__data {
+    display: grid;
+    gap: 0.4rem;
+    margin: 0;
+  }
+
+  .req__data div {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 0.75rem;
+  }
+
+  .req__data dt {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--gray-600);
+  }
+
+  .req__data dd {
+    margin: 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .req__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    align-items: center;
+  }
+
+  .req__actions form {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .req__actions select {
+    min-height: 42px;
+    width: auto;
+  }
+
+  .admin-empty,
+  .admin-note {
+    color: var(--gray-600);
+  }
+</style>
