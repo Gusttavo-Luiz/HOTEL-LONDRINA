@@ -83,6 +83,8 @@ const wa = whatsappUrl('Olá! Gostaria de informações sobre hospedagem no Hote
     label.textContent = open ? 'Fechar menu' : 'Abrir menu';
     header.classList.toggle('is-open', open);
     document.documentElement.classList.toggle('no-scroll', open);
+    // O painel começa exatamente abaixo do cabeçalho (há uma faixa acima dele na demonstração).
+    if (open) header.style.setProperty('--menu-top', `${Math.max(0, header.getBoundingClientRect().bottom)}px`);
     menu.hidden = !open;
     if (open) menu.querySelector<HTMLElement>('a')?.focus();
     else if (restoreFocus) toggle.focus();
@@ -140,8 +142,8 @@ const wa = whatsappUrl('Olá! Gostaria de informações sobre hospedagem no Hote
     position: sticky;
     top: 0;
     z-index: 100;
-    background: rgb(23 43 58 / 0.97);
-    backdrop-filter: saturate(1.3) blur(12px);
+    /* Sem backdrop-filter: ele tornaria o cabeçalho o contêiner do menu fixo. */
+    background: var(--navy-900);
     border-bottom: 1px solid rgb(255 255 255 / 0.08);
     transition: box-shadow 0.3s var(--ease);
   }
@@ -295,7 +297,7 @@ const wa = whatsappUrl('Olá! Gostaria de informações sobre hospedagem no Hote
 
   .mobile-menu {
     position: fixed;
-    inset: var(--header-h) 0 0;
+    inset: var(--menu-top, var(--header-h)) 0 0;
     z-index: 99;
     display: flex;
     flex-direction: column;
@@ -305,10 +307,6 @@ const wa = whatsappUrl('Olá! Gostaria de informações sobre hospedagem no Hote
     overflow-y: auto;
     background: var(--grad-navy);
     animation: menu-in 0.22s var(--ease);
-  }
-
-  .header.is-scrolled .mobile-menu {
-    inset: 64px 0 0;
   }
 
   .mobile-menu ul {
