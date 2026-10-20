@@ -1,77 +1,46 @@
 ---
-import type { RoomCategory } from '../data/rooms';
+import type { Room } from '../content/rooms';
+import { formatBRL } from '../config/hotel';
 import Photo from './Photo.astro';
 import Icon from './Icon.astro';
 
 interface Props {
-  room: RoomCategory;
+  room: Room;
 }
 
 const { room } = Astro.props;
-const cover = room.photos[0];
-const shared = room.bathroom === 'compartilhado';
+const cover = room.photos[0] ?? { file: `${room.id}-01.jpg`, alt: room.name };
 ---
 
-<article class="room" data-reveal aria-labelledby={`room-${room.id}`}>
+<article class="room" aria-labelledby={`quarto-${room.id}`} data-reveal>
   <div class="room__media">
-    {
-      cover ? (
-        <Photo file={cover.file} alt={cover.alt} placeholderLabel={room.name} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" />
-      ) : (
-        <Photo file={`${room.id}-01.jpg`} alt={room.name} placeholderLabel={room.name} />
-      )
-    }
-    <span class:list={['room__bath', { 'room__bath--shared': shared }]}>
-      <Icon name="bath" size={16} /> Banheiro {room.bathroom}
-    </span>
+    <Photo file={cover.file} alt={cover.alt} label={room.name} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw">
+      <div slot="fallback" class="room__fallback" aria-hidden="true"><Icon name="image" size={28} /></div>
+    </Photo>
+    {room.status === 'provisorio' && <span class="dev-badge room__badge">Dados provisórios</span>}
   </div>
-
   <div class="room__body">
-    <h3 id={`room-${room.id}`}>{room.name}</h3>
+    <h3 id={`quarto-${room.id}`}>{room.name}</h3>
     <p class="room__desc">{room.description}</p>
-
-    <dl class="room__specs">
-      <div>
-        <dt><Icon name="users" size={18} /> Capacidade</dt>
-        <dd>Até {room.maxGuests} {room.maxGuests === 1 ? 'hóspede' : 'hóspedes'}</dd>
-      </div>
-      <div>
-        <dt><Icon name="bed" size={18} /> Camas</dt>
-        <dd>{room.beds}</dd>
-      </div>
-      <div>
-        <dt><Icon name="bath" size={18} /> Banheiro</dt>
-        <dd>{shared ? 'Compartilhado' : 'Privativo'}</dd>
-      </div>
-    </dl>
-
-    {
-      room.amenities.length > 0 && (
-        <ul class="room__amenities" role="list" aria-label="Comodidades">
-          {room.amenities.map((item) => (
-            <li>
-              <Icon name="check" size={16} /> {item}
-            </li>
-          ))}
-        </ul>
-      )
-    }
-
-    {
-      room.notes && room.notes.length > 0 && (
-        <ul class="room__notes" role="list" aria-label="Informações importantes">
-          {room.notes.map((note) => (
-            <li>
-              <Icon name="info" size={16} /> {note}
-            </li>
-          ))}
-        </ul>
-      )
-    }
-
-    <a href="#reservas" class="btn btn--navy btn--block room__cta" data-room-select={room.id}>
-      Consultar disponibilidade
-    </a>
+    <p class="room__capacity"><Icon name="users" size={18} /> Até {room.capacity} {room.capacity === 1 ? 'hóspede' : 'hóspedes'}</p>
+    <ul class="room__amenities" role="list" aria-label="Comodidades">
+      {room.amenities.map((a) => <li><Icon name="check" size={15} /> {a}</li>)}
+    </ul>
+    <div class="room__footer">
+      <p class="room__price">
+        {
+          room.priceFrom ? (
+            <>
+              <small>A partir de</small> {formatBRL(room.priceFrom)}
+              <small>/ diária*</small>
+            </>
+          ) : (
+            <small>Consulte tarifas para suas datas</small>
+          )
+        }
+      </p>
+      <a href="#solicitacao" class="btn btn--navy btn--sm" data-room={room.id}>Consultar este quarto</a>
+    </div>
   </div>
 </article>
 
@@ -79,18 +48,18 @@ const shared = room.bathroom === 'compartilhado';
   .room {
     display: flex;
     flex-direction: column;
+    overflow: hidden;
     border: 1px solid var(--line);
     border-radius: var(--radius-lg);
     background: var(--white);
-    overflow: hidden;
     transition:
-      box-shadow 0.3s var(--ease),
-      transform 0.3s var(--ease);
+      transform 0.3s var(--ease),
+      box-shadow 0.3s var(--ease);
   }
 
   .room:hover {
     transform: translateY(-3px);
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--shadow);
   }
 
   .room__media {
@@ -100,116 +69,97 @@ const shared = room.bathroom === 'compartilhado';
     background: var(--sand-200);
   }
 
-  .room__media :global(img),
   .room__media :global(picture),
-  .room__media :global(.photo-placeholder) {
+  .room__media :global(img),
+  .room__media :global(.photo-pending) {
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
 
-  .room__bath {
-    position: absolute;
-    top: 0.85rem;
-    left: 0.85rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.35rem 0.75rem;
-    border-radius: 999px;
-    background: var(--navy-900);
-    color: var(--white);
-    font-size: 0.8125rem;
-    font-weight: 700;
+  .room__fallback {
+    display: grid;
+    place-items: center;
+    height: 100%;
+    color: var(--sand-300);
   }
 
-  .room__bath--shared {
-    background: var(--gold-400);
-    color: var(--navy-950);
+  .room__badge {
+    position: absolute;
+    top: 0.75rem;
+    left: 0.75rem;
   }
 
   .room__body {
     display: flex;
     flex: 1;
     flex-direction: column;
-    gap: 1rem;
-    padding: 1.5rem;
+    gap: 0.85rem;
+    padding: 1.4rem;
   }
 
-  .room h3 {
-    font-size: 1.45rem;
+  h3 {
+    font-size: 1.4rem;
   }
 
   .room__desc {
-    color: var(--ink-soft);
+    color: var(--gray-600);
+    font-size: 0.9875rem;
   }
 
-  .room__specs {
-    display: grid;
-    gap: 0.5rem;
-    margin: 0;
-    padding: 1rem 0;
-    border-block: 1px solid var(--line);
-  }
-
-  .room__specs div {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    font-size: 0.9375rem;
-  }
-
-  .room__specs dt {
+  .room__capacity {
     display: inline-flex;
     align-items: center;
     gap: 0.45rem;
-    color: var(--ink-soft);
+    font-weight: 650;
+    color: var(--navy-900);
   }
 
-  .room__specs dt svg {
+  .room__capacity :global(svg) {
     color: var(--gold-700);
   }
 
-  .room__specs dd {
-    margin: 0;
-    font-weight: 650;
-    color: var(--navy-900);
-    text-align: right;
-  }
-
-  .room__amenities,
-  .room__notes {
+  .room__amenities {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.4rem 1rem;
+    gap: 0.35rem 0.9rem;
     margin: 0;
     padding: 0;
     list-style: none;
     font-size: 0.9375rem;
+    color: var(--gray-600);
   }
 
-  .room__amenities li,
-  .room__notes li {
+  .room__amenities li {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.3rem;
   }
 
-  .room__amenities svg {
+  .room__amenities :global(svg) {
     color: var(--success);
   }
 
-  .room__notes {
-    flex-direction: column;
-    color: var(--ink-soft);
-  }
-
-  .room__notes svg {
-    flex: none;
-    color: var(--navy-700);
-  }
-
-  .room__cta {
+  .room__footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
     margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .room__price {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    color: var(--navy-900);
+  }
+
+  .room__price small {
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    color: var(--gray-600);
   }
 </style>

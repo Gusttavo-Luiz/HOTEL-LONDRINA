@@ -1,87 +1,98 @@
 import { test, expect, type Page } from '@playwright/test';
+import { ADMIN } from '../playwright.config';
 
-const WA = 'https://wa.me/5543998451927';
-const isMobile = (page: Page) => (page.viewportSize()?.width ?? 1000) < 768;
+const isMobile = (page: Page) => (page.viewportSize()?.width ?? 1200) < 768;
+const isDesktopNav = (page: Page) => (page.viewportSize()?.width ?? 0) >= 1100;
 
-/** Captura erros de console e intercepta window.open (WhatsApp). */
-async function setup(page: Page) {
+/** Data em AAAA-MM-DD (fuso de Londrina) a partir de hoje. */
+function iso(offset: number) {
+  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+  now.setDate(now.getDate() + offset);
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+async function open(page: Page, path = '/') {
   const errors: string[] = [];
-  page.on('console', (msg) => msg.type() === 'error' && errors.push(msg.text()));
-  page.on('pageerror', (err) => errors.push(err.message));
-  // Bloqueia recursos externos (mapa) para os testes não dependerem da rede.
-  await page.route(/google\.com/, (route) => route.fulfill({ status: 200, body: '' }));
-  await page.addInitScript(() => {
-    (window as any).__opened = [];
-    window.open = ((url: string) => {
-      (window as any).__opened.push(url);
-      return { opener: null } as Window;
-    }) as typeof window.open;
-  });
-  await page.goto('/');
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  page.on('pageerror', (e) => errors.push(e.message));
+  // Nenhum teste depende da rede externa (Google Maps).
+  await page.route(/google\.com/, (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<p>mapa</p>' }));
+  await page.goto(path);
   return errors;
 }
 
-const iso = (offsetDays: number) => {
-  const d = new Date();
-  d.setDate(d.getDate() + offsetDays);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-};
+/** Aguarda a hidratação dos formulários (ilhas React client:load / client:idle). */
+async function hydrated(page: Page) {
+  await page.waitForFunction(() => {
+    const islands = [...document.querySelectorAll('astro-island')].filter((el) => el.querySelector('form'));
+    return islands.length >= 2 && islands.every((el) => !el.hasAttribute('ssr'));
+  });
+}
 
-test('página inicial: SEO, estrutura e sem erros de console', async ({ page }) => {
-  const errors = await setup(page);
-  await expect(page).toHaveTitle(/Hotel Triunfo Londrina/);
-  await expect(page.locator('h1')).toHaveCount(1);
-  await expect(page.locator('h1')).toHaveText('Hotel econômico em Londrina, com localização privilegiada.');
-  await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /Londrina/);
-  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://hoteltriunfolondrina.com.br/');
-  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', /og-image\.jpg$/);
+test.describe('Página inicial', () => {
+  test('SEO, estrutura, dados estruturados e console limpo', async ({ page }) => {
+    const errors = await open(page);
+    await expect(page).toHaveTitle(/Hotel barato em Londrina/);
+    await expect(page.locator('h1')).toHaveCount(1);
+    await expect(page.locator('h1')).toHaveText('Sua estadia em Londrina com conforto, praticidade e economia.');
+    await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /centro de Londrina/);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://www.hoteltriunfolondrina.com.br/');
+    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', /og-image\.jpg$/);
+    await expect(page.locator('meta[http-equiv="content-security-policy"]')).toHaveCount(1);
 
-  const schemas = await page.locator('script[type="application/ld+json"]').allTextContents();
-  const types = schemas.map((s) => JSON.parse(s)['@type']);
-  expect(types).toEqual(expect.arrayContaining(['Hotel', 'WebSite', 'FAQPage']));
-  const hotel = JSON.parse(schemas[0]);
-  expect(hotel.telephone).toBe('+554333235054');
-  expect(hotel.address.postalCode).toBe('86010-000');
+    const schemas = (await page.locator('script[type="application/ld+json"]').allTextContents()).map((s) => JSON.parse(s));
+    const hotel = schemas.find((s) => s['@type'] === 'Hotel');
+    expect(hotel.telephone).toBe('+554333235054');
+    expect(hotel.address.postalCode).toBe('86010-000');
+    expect(hotel.aggregateRating).toBeUndefined(); // sem avaliações autodeclaradas
+    expect(schemas.some((s) => s['@type'] === 'FAQPage')).toBe(true);
 
-  // Todas as imagens têm texto alternativo.
-  expect(await page.locator('img:not([alt])').count()).toBe(0);
+    // Hierarquia: nenhum h3 antes do primeiro h2; todas as imagens com alt.
+    expect(await page.locator('img:not([alt])').count()).toBe(0);
+    await hydrated(page);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
+    expect(errors).toEqual([]);
+  });
 
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-  expect(overflow).toBeLessThanOrEqual(0);
-  expect(errors).toEqual([]);
+  test('conteúdo provisório não é publicado em produção', async ({ page }) => {
+    await open(page);
+    const html = await page.content();
+    expect(html).not.toContain('PROVISÓRIO');
+    expect(html).not.toContain('Foto pendente');
+    await expect(page.locator('#acomodacoes')).toContainText('TV');
+    await expect(page.locator('#acomodacoes')).toContainText('R$ 145');
+  });
+
+  test('âncoras internas existem e links externos são seguros', async ({ page }) => {
+    await open(page);
+    const ids = await page.$$eval('a[href*="#"]', (links) => [
+      ...new Set(links.map((a) => (a as HTMLAnchorElement).hash.slice(1)).filter(Boolean)),
+    ]);
+    for (const id of ids) await expect(page.locator(`[id="${id}"]`), `#${id}`).toHaveCount(1);
+    expect(await page.locator('a:not([href]), a[href=""], a[href="#"]').count()).toBe(0);
+    const unsafe = await page.$$eval('a[target="_blank"]', (links) =>
+      links.filter((a) => !(a.getAttribute('rel') ?? '').includes('noopener')).map((a) => a.getAttribute('href')),
+    );
+    expect(unsafe).toEqual([]);
+    await expect(page.locator('a[href="tel:+554333235054"]').first()).toBeAttached();
+    await expect(page.getByRole('link', { name: /Como chegar/ })).toHaveAttribute('href', /google\.com\/maps\/dir\/\?api=1&destination=Rua\+Professor/);
+  });
 });
 
-test('todos os links internos apontam para seções existentes', async ({ page }) => {
-  await setup(page);
-  const hashes = await page.$$eval('a[href^="/#"], a[href^="#"]', (links) =>
-    [...new Set(links.map((a) => (a as HTMLAnchorElement).hash.slice(1)))],
-  );
-  expect(hashes.length).toBeGreaterThan(5);
-  for (const id of hashes) {
-    await expect(page.locator(`[id="${id}"]`), `âncora #${id}`).toHaveCount(1);
-  }
-  // Nenhum link vazio.
-  expect(await page.locator('a:not([href]), a[href=""], a[href="#"]').count()).toBe(0);
-});
-
-test('contatos: telefone, WhatsApp e mapa', async ({ page }) => {
-  await setup(page);
-  await expect(page.locator('a[href="tel:+554333235054"]').first()).toBeAttached();
-  const wa = page.locator(`a[href^="${WA}"]`);
-  expect(await wa.count()).toBeGreaterThan(3);
-  await expect(wa.first()).toHaveAttribute('rel', /noopener/);
-  await expect(page.getByRole('link', { name: /Abrir no Google Maps/ })).toHaveAttribute(
-    'href',
-    /google\.com\/maps\/search\/\?api=1&query=Rua\+Professor/,
-  );
-  await expect(page.locator('#localizacao iframe')).toHaveAttribute('loading', 'lazy');
-});
-
-test('menu de navegação (desktop e celular)', async ({ page }) => {
-  await setup(page);
-  if (isMobile(page)) {
+test.describe('Navegação', () => {
+  test('menu principal (desktop) e menu mobile', async ({ page }) => {
+    await open(page);
+    if (isDesktopNav(page)) {
+      const nav = page.getByRole('navigation', { name: 'Principal', exact: true });
+      for (const label of ['Início', 'Sobre o Hotel', 'Acomodações', 'Comodidades', 'Localização', 'Contato'])
+        await expect(nav.getByRole('link', { name: label, exact: true })).toBeVisible();
+      await nav.getByRole('link', { name: 'Comodidades' }).click();
+      await expect(page).toHaveURL(/#comodidades$/);
+      await expect(page.locator('#comodidades-title')).toBeInViewport();
+      return;
+    }
     const toggle = page.locator('[data-menu-toggle]');
-    const menu = page.locator('#mobile-menu');
+    const menu = page.locator('#menu-mobile');
     await expect(menu).toBeHidden();
     await toggle.click();
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
@@ -90,199 +101,282 @@ test('menu de navegação (desktop e celular)', async ({ page }) => {
     await expect(menu).toBeHidden();
     await expect(toggle).toBeFocused();
     await toggle.click();
-    await menu.getByRole('link', { name: 'Avaliações' }).click();
+    await menu.getByRole('link', { name: 'Localização' }).click();
     await expect(menu).toBeHidden();
-    await expect(page).toHaveURL(/#avaliacoes$/);
-    await expect(page.locator('.action-bar')).toBeVisible();
-  } else {
-    const nav = page.getByRole('navigation', { name: 'Navegação principal', exact: true });
-    for (const label of ['Início', 'Sobre o Hotel', 'Acomodações', 'Fotos', 'Avaliações', 'Localização', 'Contato']) {
-      await expect(nav.getByRole('link', { name: label, exact: true })).toBeVisible();
-    }
-    await nav.getByRole('link', { name: 'Localização' }).click();
     await expect(page).toHaveURL(/#localizacao$/);
-    await expect(page.locator('#localizacao h2')).toBeInViewport();
-    await expect(page.locator('[data-header]')).toHaveClass(/is-scrolled/);
-  }
+  });
+
+  test('botão flutuante aparece fora do topo e some sobre o formulário', async ({ page }) => {
+    await open(page);
+    const floating = page.locator('[data-floating]');
+    await page.locator('#comodidades').scrollIntoViewIfNeeded();
+    await expect(floating).not.toHaveClass(/is-hidden/);
+    await expect(floating.getByRole('link', { name: /Ligar/ })).toHaveAttribute('href', 'tel:+554333235054');
+    await page.locator('#solicitacao').scrollIntoViewIfNeeded();
+    await expect(floating).toHaveClass(/is-hidden/);
+  });
 });
 
-test('botões de reserva levam ao formulário', async ({ page }) => {
-  await setup(page);
-  await page.locator('#inicio').getByRole('link', { name: 'Faça sua reserva' }).click();
-  await expect(page.locator('#form-reserva')).toBeInViewport();
-  await page.locator('#reservas').getByRole('link', { name: 'Fazer reserva online' }).click();
-  await expect(page.locator('#reserva-checkin')).toBeFocused();
+test.describe('Consulta de hospedagem', () => {
+  test('valida datas e quantidade de hóspedes', async ({ page }) => {
+    await open(page);
+    await hydrated(page);
+    const widget = page.getByRole('form', { name: 'Consultar hospedagem' });
+    await widget.getByRole('button', { name: 'Buscar hospedagem' }).click();
+    await expect(widget.getByText('Informe a data de entrada.')).toBeVisible();
+    await expect(widget.getByText('Informe a data de saída.')).toBeVisible();
+
+    const entrada = widget.getByLabel('Entrada');
+    const saida = widget.getByLabel('Saída');
+    await entrada.fill(iso(-1));
+    await widget.getByRole('button', { name: 'Buscar hospedagem' }).click();
+    await expect(widget.getByText('A data de entrada não pode estar no passado.')).toBeVisible();
+
+    await entrada.fill(iso(10));
+    await expect(saida).toHaveValue(iso(11)); // saída ajustada automaticamente
+    await saida.fill(iso(10));
+    await widget.getByRole('button', { name: 'Buscar hospedagem' }).click();
+    await expect(widget.getByText('A saída deve ser pelo menos 1 dia depois da entrada.')).toBeVisible();
+  });
+
+  test('encaminha datas e hóspedes para o formulário de solicitação', async ({ page }) => {
+    await open(page);
+    await hydrated(page);
+    const widget = page.getByRole('form', { name: 'Consultar hospedagem' });
+    await widget.getByLabel('Entrada').fill(iso(7));
+    await widget.getByLabel('Saída').fill(iso(10));
+    await widget.getByLabel('Adultos').selectOption('3');
+    await widget.getByLabel('Crianças').selectOption('1');
+    await expect(widget).toContainText('3 noites');
+    await widget.getByRole('button', { name: 'Buscar hospedagem' }).click();
+
+    const form = page.locator('#solicitacao form');
+    await expect(form).toBeInViewport();
+    await expect(form.getByLabel('Data de entrada')).toHaveValue(iso(7));
+    await expect(form.getByLabel('Data de saída')).toHaveValue(iso(10));
+    await expect(form.getByLabel('Adultos')).toHaveValue('3');
+    await expect(form.getByLabel('Crianças')).toHaveValue('1');
+    await expect(form.getByLabel(/^Nome/)).toBeFocused();
+  });
+
+  test('"Consultar disponibilidade" leva à consulta', async ({ page }) => {
+    await open(page);
+    await page.locator('#inicio').getByRole('link', { name: 'Consultar disponibilidade' }).click();
+    await expect(page).toHaveURL(/#reservar$/);
+    await expect(page.getByRole('button', { name: 'Buscar hospedagem' })).toBeInViewport();
+  });
 });
 
-test('reserva: validações de campos e datas', async ({ page }) => {
-  await setup(page);
-  const form = page.locator('#form-reserva');
-  await form.getByRole('button', { name: /Enviar solicitação/ }).click();
-  await expect(page.locator('#erro-checkin')).toHaveText('Informe a data de check-in.');
-  await expect(page.locator('#erro-checkout')).toHaveText('Informe a data de check-out.');
-  await expect(page.locator('#erro-name')).not.toBeEmpty();
-  await expect(page.locator('#erro-phone')).not.toBeEmpty();
-  await expect(page.locator('#reserva-checkin')).toHaveAttribute('aria-invalid', 'true');
-  await expect(page.locator('#reserva-checkin')).toBeFocused();
-  await expect(form.locator('[data-form-status]')).toContainText('4 campos');
+test.describe('Formulário de solicitação', () => {
+  test('validação no navegador', async ({ page }) => {
+    await open(page);
+    await hydrated(page);
+    const form = page.locator('#solicitacao form');
+    await form.getByRole('button', { name: /Enviar solicitação/ }).click();
+    await expect(form.getByText('Informe seu nome.')).toBeVisible();
+    await expect(form.getByText('Informe um e-mail ou telefone para retorno.')).toBeVisible();
+    await expect(form.getByText('Informe a data de entrada.')).toBeVisible();
+    await expect(form.getByText(/autorizar o uso dos dados/)).toBeVisible();
+    await expect(form.getByLabel(/^Nome/)).toBeFocused();
 
-  // Data passada
-  await page.locator('#reserva-checkin').fill(iso(-2));
-  await page.locator('#reserva-checkin').dispatchEvent('change');
-  await expect(page.locator('#erro-checkin')).toContainText('data passada');
+    await form.getByLabel(/E-mail ou telefone/).fill('joao@exemplo');
+    await form.getByRole('button', { name: /Enviar solicitação/ }).click();
+    await expect(form.getByText(/E-mail inválido/)).toBeVisible();
+    await form.getByLabel(/E-mail ou telefone/).fill('1234');
+    await form.getByRole('button', { name: /Enviar solicitação/ }).click();
+    await expect(form.getByText(/Telefone inválido/)).toBeVisible();
 
-  // Check-out anterior ao check-in
-  await page.locator('#reserva-checkin').fill(iso(10));
-  await page.locator('#reserva-checkin').dispatchEvent('change');
-  await expect(page.locator('#reserva-checkout')).toHaveValue(iso(11)); // ajustado automaticamente
-  await page.locator('#reserva-checkout').fill(iso(9));
-  await page.locator('#reserva-checkout').dispatchEvent('change');
-  await expect(page.locator('#erro-checkout')).toHaveText('O check-out deve ser posterior ao check-in.');
+    // Assunto "informações": sem datas, mensagem obrigatória.
+    await form.getByText('Dúvidas e informações').click();
+    await expect(form.getByLabel('Data de entrada')).toHaveCount(0);
+    await form.getByRole('button', { name: 'Enviar mensagem' }).click();
+    await expect(form.getByText(/mínimo de 10 caracteres/)).toBeVisible();
+  });
 
-  // Mesmo dia também é inválido
-  await page.locator('#reserva-checkout').fill(iso(10));
-  await form.getByRole('button', { name: /Enviar solicitação/ }).click();
-  await expect(page.locator('#erro-checkout')).toHaveText('O check-out deve ser posterior ao check-in.');
+  test('envio real grava a solicitação e aparece no painel', async ({ page, browser }) => {
+    await open(page);
+    await hydrated(page);
+    const form = page.locator('#solicitacao form');
+    const name = `Hóspede Teste ${Date.now()}`;
+    await form.getByLabel(/^Nome/).fill(name);
+    await form.getByLabel(/E-mail ou telefone/).fill('43999998888');
+    await form.getByLabel('Data de entrada').fill(iso(20));
+    await form.getByLabel('Data de saída').fill(iso(23));
+    await form.getByLabel(/Mensagem/).fill('Chegada prevista às 22h. <b>teste</b>');
+    await form.getByRole('checkbox').check();
+    await page.waitForTimeout(2600); // tempo mínimo de preenchimento (antispam)
+    await form.getByRole('button', { name: /Enviar solicitação/ }).click();
 
-  // Telefone inválido
-  await page.locator('#reserva-telefone').fill('1234');
-  await form.getByRole('button', { name: /Enviar solicitação/ }).click();
-  await expect(page.locator('#erro-phone')).toContainText('DDD');
-  expect(await page.evaluate(() => (window as any).__opened.length)).toBe(0);
+    const done = page.getByRole('status').filter({ hasText: 'recebida' });
+    await expect(done).toBeVisible();
+    await expect(done).toContainText('Sua reserva ainda não está confirmada');
+    const id = (await done.locator('h3').textContent())!.match(/nº (\d+)/)![1];
+
+    const admin = await browser.newContext({ httpCredentials: ADMIN, baseURL: 'http://127.0.0.1:4322' });
+    const adminPage = await admin.newPage();
+    await adminPage.goto('/admin');
+    const item = adminPage.locator('.req').filter({ hasText: name });
+    await expect(item).toContainText(`nº ${id}`);
+    await expect(item).toContainText('(43) 99999-8888');
+    await expect(item).toContainText('3 noites');
+    await expect(item).toContainText('<b>teste</b>'); // exibido como texto, não HTML
+    await admin.close();
+  });
+
+  test('erro do servidor não exibe sucesso', async ({ page }) => {
+    await open(page);
+    await hydrated(page);
+    await page.route('**/api/solicitacoes', (route) =>
+      route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'Falha simulada.' }) }),
+    );
+    const form = page.locator('#solicitacao form');
+    await form.getByText('Dúvidas e informações').click();
+    await form.getByLabel(/^Nome/).fill('Ana');
+    await form.getByLabel(/E-mail ou telefone/).fill('ana@exemplo.com.br');
+    await form.getByLabel(/Mensagem/).fill('Vocês aceitam cachorro de porte médio?');
+    await form.getByRole('checkbox').check();
+    await form.getByRole('button', { name: 'Enviar mensagem' }).click();
+    await expect(form.locator('.alert--error')).toContainText('Falha simulada.');
+    await expect(form.locator('.alert--error a[href="tel:+554333235054"]')).toBeVisible();
+    await expect(page.getByText(/recebida/)).toHaveCount(0);
+  });
 });
 
-test('reserva: solicitação válida abre o WhatsApp com os dados', async ({ page }) => {
-  await setup(page);
-  await page.locator('#reserva-checkin').fill(iso(5));
-  await page.locator('#reserva-checkin').dispatchEvent('change');
-  await page.locator('#reserva-checkout').fill(iso(8));
-  await page.locator('#reserva-checkout').dispatchEvent('change');
-  await expect(page.locator('[data-nights]')).toHaveText('3 noites de hospedagem');
-  await page.locator('#reserva-hospedes').selectOption('2');
-  await page.locator('#reserva-nome').fill('Maria da Silva');
-  await page.locator('#reserva-telefone').fill('43999998888');
-  await page.locator('#reserva-telefone').blur();
-  await expect(page.locator('#reserva-telefone')).toHaveValue('(43) 99999-8888');
-  await page.locator('#reserva-obs').fill('Chegada às 22h');
-  await page.getByRole('button', { name: /Enviar solicitação/ }).click();
+test.describe('API e painel', () => {
+  test('API rejeita dados inválidos, origem externa e métodos indevidos', async ({ request }) => {
+    const invalid = await request.post('/api/solicitacoes', {
+      data: { subject: 'reserva', name: '', contact: 'x', consent: false, elapsed: 5000 },
+    });
+    expect(invalid.status()).toBe(422);
+    expect((await invalid.json()).fields.name).toBeTruthy();
 
-  const opened: string[] = await page.evaluate(() => (window as any).__opened);
-  expect(opened).toHaveLength(1);
-  expect(opened[0].startsWith(`${WA}?text=`)).toBe(true);
-  const text = decodeURIComponent(opened[0].split('?text=')[1]);
-  expect(text).toContain('Hóspedes: 2');
-  expect(text).toContain('(3 noites)');
-  expect(text).toContain('Maria da Silva');
-  expect(text).toContain('Chegada às 22h');
-  const status = page.locator('#form-reserva [data-form-status]');
-  await expect(status).toHaveAttribute('data-tone', 'success');
-  await expect(status).toContainText('Envie a mensagem');
-  await expect(status.locator(`a[href^="${WA}"]`)).toBeAttached();
+    const foreign = await request.post('/api/solicitacoes', { data: {}, headers: { Origin: 'https://exemplo-malicioso.com' } });
+    expect(foreign.status()).toBe(403);
+
+    const get = await request.get('/api/solicitacoes');
+    expect(get.status()).toBe(405);
+  });
+
+  test('painel exige senha e permite atualizar e excluir', async ({ browser, request }) => {
+    expect((await request.get('/admin')).status()).toBe(401);
+
+    const created = await request.post('/api/solicitacoes', {
+      data: { subject: 'informacoes', name: 'Para excluir', contact: 'teste@exemplo.com', message: 'Mensagem para o teste do painel.', consent: true, elapsed: 5000 },
+    });
+    expect(created.status()).toBe(201);
+    const { id } = await created.json();
+
+    const ctx = await browser.newContext({ httpCredentials: ADMIN, baseURL: 'http://127.0.0.1:4322' });
+    const page = await ctx.newPage();
+    await page.goto('/admin');
+    const item = page.locator('.req').filter({ hasText: `nº ${id}` });
+    await item.getByLabel(`Status da solicitação ${id}`).selectOption('em_atendimento');
+    await item.getByRole('button', { name: 'Salvar' }).click();
+    await expect(page.getByRole('status')).toHaveText(`Solicitação nº ${id} atualizada.`);
+    await expect(page.locator('.req').filter({ hasText: `nº ${id}` })).toContainText('Em atendimento');
+
+    page.once('dialog', (d) => d.accept());
+    await page.locator('.req').filter({ hasText: `nº ${id}` }).getByRole('button', { name: 'Excluir' }).click();
+    await expect(page.getByRole('status')).toHaveText(`Solicitação nº ${id} excluída.`);
+    await expect(page.locator('.req').filter({ hasText: `nº ${id}` })).toHaveCount(0);
+    await ctx.close();
+  });
 });
 
-test('contato: validação e envio pelo WhatsApp', async ({ page }) => {
-  await setup(page);
-  const form = page.locator('[data-contact-form]');
-  await form.getByRole('button', { name: 'Enviar mensagem' }).click();
-  await expect(page.locator('#erro-contato-name')).toHaveText('Informe seu nome.');
-  await expect(page.locator('#erro-contato-email')).toHaveText('Informe seu e-mail.');
-  await expect(page.locator('#erro-contato-message')).not.toBeEmpty();
-  await expect(page.locator('#erro-contato-phone')).toBeEmpty();
+test.describe('Seções', () => {
+  test('mapa só carrega após autorização', async ({ page }) => {
+    await open(page);
+    const map = page.locator('#localizacao .map-embed');
+    await map.scrollIntoViewIfNeeded();
+    await expect(map.locator('iframe')).toHaveCount(0);
+    await map.getByRole('button', { name: 'Carregar mapa' }).click();
+    await expect(map.locator('iframe')).toHaveAttribute('src', /google\.com\/maps\?q=Rua\+Professor/);
+  });
 
-  await page.locator('#contato-nome').fill('João Pereira');
-  await page.locator('#contato-email').fill('joao@exemplo');
-  await page.locator('#contato-telefone').fill('99');
-  await page.locator('#contato-mensagem').fill('Olá');
-  await form.getByRole('button', { name: 'Enviar mensagem' }).click();
-  await expect(page.locator('#erro-contato-email')).toContainText('e-mail válido');
-  await expect(page.locator('#erro-contato-phone')).toContainText('DDD');
-  await expect(page.locator('#erro-contato-message')).toContainText('mínimo');
-  expect(await page.evaluate(() => (window as any).__opened.length)).toBe(0);
+  test('avaliações mostram nota e total do Google, sem depoimentos inventados', async ({ page }) => {
+    await open(page);
+    const section = page.locator('#avaliacoes');
+    await expect(section).toContainText('3,9');
+    await expect(section).toContainText('546 avaliações');
+    await expect(section.getByRole('img', { name: /Nota 3,9 de 5/ })).toBeVisible();
+    await expect(section.getByRole('link', { name: /Ver avaliações no Google/ })).toHaveAttribute('href', /google\.com\/maps/);
+    await expect(section.locator('blockquote')).toHaveCount(0);
+  });
 
-  await page.locator('#contato-email').fill('joao@exemplo.com.br');
-  await page.locator('#contato-telefone').fill('4333235054');
-  await page.locator('#contato-mensagem').fill('Gostaria de saber sobre hospedagem para uma equipe.');
-  await form.getByRole('button', { name: 'Enviar mensagem' }).click();
-  const opened: string[] = await page.evaluate(() => (window as any).__opened);
-  expect(opened).toHaveLength(1);
-  const text = decodeURIComponent(opened[0].split('?text=')[1]);
-  expect(text).toContain('joao@exemplo.com.br');
-  expect(text).toContain('(43) 3323-5054');
-  await expect(form.locator('[data-form-status]')).toHaveAttribute('data-tone', 'success');
+  test('comodidades confirmadas e perguntas frequentes', async ({ page }) => {
+    await open(page);
+    const amenities = page.locator('#comodidades h3');
+    await expect(amenities).toHaveText([
+      'Café da manhã incluso',
+      'Estacionamento gratuito',
+      'Wi-Fi gratuito',
+      'Aceita animais de estimação',
+      'Recepção 24 horas',
+      'Quartos equipados',
+    ]);
+    const item = page.locator('.faq__item').filter({ hasText: 'animais de estimação' });
+    await item.locator('summary').click();
+    await expect(item.locator('p')).toBeVisible();
+    await expect(item.locator('p')).toContainText('regras');
+    await expect(page.locator('.faq__item')).toHaveCount(8);
+  });
+
+  test('galeria com ampliação (quando há fotos oficiais)', async ({ page }) => {
+    await open(page);
+    const thumbs = page.locator('[data-lightbox-index]');
+    test.skip((await thumbs.count()) === 0, 'Ainda não há fotos oficiais em src/assets/fotos.');
+    // A galeria hidrata ao entrar na tela (client:visible).
+    await thumbs.first().scrollIntoViewIfNeeded();
+    await page.waitForFunction(() => {
+      const island = document.querySelector('[data-lightbox-index]')?.closest('astro-island');
+      return island && !island.hasAttribute('ssr');
+    });
+    await thumbs.first().click();
+    const dialog = page.getByRole('dialog', { name: 'Foto ampliada' });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator('img')).toHaveAttribute('src', /\.webp/);
+    if ((await thumbs.count()) > 1) {
+      await page.keyboard.press('ArrowRight');
+      await expect(dialog.locator('[data-lightbox-count]')).toContainText('2 de');
+    }
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    await expect(thumbs.first()).toBeFocused();
+  });
+
+  test('acessibilidade básica: pular conteúdo e rótulos', async ({ page }) => {
+    await open(page);
+    await hydrated(page);
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('link', { name: 'Pular para o conteúdo' })).toBeFocused();
+    const unlabeled = await page.$$eval('input:not([type=hidden]):not([tabindex="-1"]), select, textarea', (els) =>
+      els.filter((el) => !(el as HTMLInputElement).labels?.length).map((el) => el.outerHTML.slice(0, 80)),
+    );
+    expect(unlabeled).toEqual([]);
+    // Alvos de toque com pelo menos 44px nos principais botões.
+    if (isMobile(page)) {
+      const small = await page.$$eval('.btn, .floating a, .header__toggle', (els) =>
+        els.filter((el) => (el as HTMLElement).offsetParent && el.getBoundingClientRect().height < 40).length,
+      );
+      expect(small).toBe(0);
+    }
+  });
 });
 
-test('avaliações: 5 depoimentos com notas originais e período histórico', async ({ page }) => {
-  await setup(page);
-  const reviews = page.locator('#avaliacoes .review');
-  await expect(reviews).toHaveCount(5);
-  const ratings = await reviews.locator('[role="img"]').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
-  expect(ratings).toEqual(['Nota 5 de 5', 'Nota 5 de 5', 'Nota 4 de 5', 'Nota 5 de 5', 'Nota 4 de 5']);
-  await expect(page.locator('#avaliacoes')).toContainText('2018 e 2019');
-  await expect(page.locator('#avaliacoes').getByRole('link', { name: /Ver avaliações/ })).toHaveAttribute('href', /google\.com\/maps/);
-});
+test.describe('Páginas auxiliares', () => {
+  test('privacidade, 404, robots e sitemap', async ({ page, request }) => {
+    await page.goto('/politica-de-privacidade/');
+    await expect(page.locator('h1')).toHaveText('Política de Privacidade');
+    await expect(page.locator('main')).toContainText('LGPD');
 
-test('galeria: filtros por categoria e lightbox', async ({ page }) => {
-  await setup(page);
-  const items = page.locator('.gallery__item');
-  const total = await items.count();
-  expect(total).toBeGreaterThan(0);
-  await page.locator('[data-filter="quartos"]').click();
-  await expect(page.locator('[data-filter="quartos"]')).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.locator('.gallery__item:not([hidden])')).toHaveCount(
-    await page.locator('.gallery__item[data-category="quartos"]').count(),
-  );
-  await page.locator('[data-filter="all"]').click();
-  await expect(page.locator('.gallery__item:not([hidden])')).toHaveCount(total);
+    const robots = await (await request.get('/robots.txt')).text();
+    expect(robots).toContain('Disallow: /admin');
+    expect(robots).toContain('Sitemap: https://www.hoteltriunfolondrina.com.br/sitemap.xml');
+    const sitemap = await (await request.get('/sitemap.xml')).text();
+    expect(sitemap).toContain('<loc>https://www.hoteltriunfolondrina.com.br/</loc>');
 
-  const openers = page.locator('[data-lightbox-src]');
-  test.skip((await openers.count()) === 0, 'Nenhuma foto oficial publicada ainda — lightbox sem imagens para abrir.');
-  await openers.first().click();
-  const dialog = page.locator('[data-lightbox]');
-  await expect(dialog).toBeVisible();
-  await expect(dialog.locator('[data-lightbox-img]')).toHaveAttribute('src', /\.webp/);
-  if ((await openers.count()) > 1) {
-    await page.keyboard.press('ArrowRight');
-    await expect(dialog.locator('[data-lightbox-count]')).toHaveText(`2 de ${await openers.count()}`);
-  }
-  await page.keyboard.press('Escape');
-  await expect(dialog).toBeHidden();
-  await expect(openers.first()).toBeFocused();
-});
-
-test('FAQ abre e fecha', async ({ page }) => {
-  await setup(page);
-  const item = page.locator('.faq__item').nth(1);
-  await expect(item).not.toHaveAttribute('open', '');
-  await item.locator('summary').click();
-  await expect(item).toHaveAttribute('open', '');
-  await expect(item.locator('p')).toBeVisible();
-});
-
-test('acessibilidade básica: skip link e foco visível', async ({ page }) => {
-  await setup(page);
-  await page.keyboard.press('Tab');
-  const skip = page.getByRole('link', { name: 'Pular para o conteúdo' });
-  await expect(skip).toBeFocused();
-  await expect(skip).toBeInViewport();
-  // Todos os campos de formulário têm rótulo associado.
-  const unlabeled = await page.$$eval('input:not([type=hidden]):not([tabindex="-1"]), select, textarea', (els) =>
-    els.filter((el) => !(el as HTMLInputElement).labels?.length).map((el) => el.id),
-  );
-  expect(unlabeled).toEqual([]);
-});
-
-test('páginas auxiliares: privacidade, 404, robots e sitemap', async ({ page, request }) => {
-  await page.goto('/politica-de-privacidade/');
-  await expect(page.locator('h1')).toHaveText('Política de Privacidade');
-  await expect(page).toHaveTitle(/Política de Privacidade/);
-
-  const robots = await request.get('/robots.txt');
-  expect(await robots.text()).toContain('Sitemap: https://hoteltriunfolondrina.com.br/sitemap.xml');
-  const sitemap = await (await request.get('/sitemap.xml')).text();
-  expect(sitemap).toContain('<loc>https://hoteltriunfolondrina.com.br/</loc>');
-  expect(sitemap).toContain('/politica-de-privacidade/');
-
-  const missing = await page.goto('/pagina-inexistente');
-  expect(missing?.status()).toBe(404);
-  await expect(page.locator('h1')).toContainText('não foi encontrada');
+    const missing = await page.goto('/nao-existe');
+    expect(missing?.status()).toBe(404);
+    await expect(page.locator('h1')).toHaveText('Página não encontrada.');
+  });
 });

@@ -2,60 +2,60 @@
 import '@fontsource-variable/fraunces/wght.css';
 import '@fontsource-variable/figtree/wght.css';
 import '../styles/global.css';
-import { site } from '../config/site';
+import { hotel } from '../config/hotel';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-import MobileActionBar from '../components/MobileActionBar.astro';
+import FloatingContact from '../components/FloatingContact.astro';
+import frauncesLatin from '@fontsource-variable/fraunces/files/fraunces-latin-wght-normal.woff2?url';
+import figtreeLatin from '@fontsource-variable/figtree/files/figtree-latin-wght-normal.woff2?url';
 
 interface Props {
   title: string;
   description: string;
-  /** Dados estruturados (schema.org) adicionais desta página. */
   jsonLd?: Record<string, unknown>[];
   noindex?: boolean;
-  ogImage?: string;
 }
 
-const { title, description, jsonLd = [], noindex = false, ogImage = '/og-image.jpg' } = Astro.props;
-const canonical = new URL(Astro.url.pathname, Astro.site ?? site.url).href;
-const ogImageUrl = new URL(ogImage, Astro.site ?? site.url).href;
+const { title, description, jsonLd = [], noindex = false } = Astro.props;
+const base = Astro.site ?? hotel.url;
+const canonical = new URL(Astro.url.pathname, base).href;
+const ogImage = new URL('/og-image.jpg', base).href;
 
-const hotelSchema = {
+/** Somente dados verificados — sem avaliações estruturadas autodeclaradas. */
+const lodging = {
   '@context': 'https://schema.org',
   '@type': 'Hotel',
-  '@id': `${site.url}/#hotel`,
-  name: site.name,
-  description: site.description,
-  url: `${site.url}/`,
-  image: ogImageUrl,
-  telephone: site.contact.phone.e164,
+  '@id': `${hotel.url}/#hotel`,
+  name: hotel.name,
+  alternateName: hotel.tradeName,
+  description:
+    'Hotel econômico tradicional no centro de Londrina, com café da manhã incluso, Wi-Fi gratuito, estacionamento gratuito e recepção 24 horas.',
+  url: `${hotel.url}/`,
+  image: ogImage,
+  telephone: hotel.phone.e164,
+  starRating: { '@type': 'Rating', ratingValue: hotel.stars },
+  priceRange: `Diária de referência R$ ${hotel.referenceRate.amount}`,
+  currenciesAccepted: 'BRL',
+  petsAllowed: true,
   address: {
     '@type': 'PostalAddress',
-    streetAddress: site.address.street,
-    addressLocality: site.address.city,
-    addressRegion: site.address.state,
-    postalCode: site.address.postalCode,
-    addressCountry: site.address.country,
+    streetAddress: hotel.address.street,
+    addressLocality: hotel.address.city,
+    addressRegion: hotel.address.state,
+    postalCode: hotel.address.postalCode,
+    addressCountry: hotel.address.country,
   },
-  hasMap: site.links.maps,
-  openingHoursSpecification: {
-    '@type': 'OpeningHoursSpecification',
-    dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
-    opens: '00:00',
-    closes: '23:59',
-  },
-  contactPoint: [
-    { '@type': 'ContactPoint', telephone: site.contact.phone.e164, contactType: 'reservations', availableLanguage: 'pt-BR' },
-    { '@type': 'ContactPoint', telephone: site.contact.whatsapp.e164, contactType: 'customer service', availableLanguage: 'pt-BR' },
-  ],
-  amenityFeature: ['Estacionamento próprio', 'Wi-Fi nos quartos', 'Café da manhã', 'Recepção 24 horas'].map((name) => ({
-    '@type': 'LocationFeatureSpecification',
-    name,
-    value: true,
-  })),
+  hasMap: hotel.links.directions,
+  amenityFeature: [
+    'Café da manhã incluso',
+    'Estacionamento gratuito',
+    'Wi-Fi gratuito',
+    'Recepção 24 horas',
+    'Aceita animais de estimação',
+    'TV no quarto',
+    'Escrivaninha',
+  ].map((name) => ({ '@type': 'LocationFeatureSpecification', name, value: true })),
 };
-
-const schemas = [hotelSchema, ...jsonLd];
 ---
 
 <!doctype html>
@@ -66,36 +66,33 @@ const schemas = [hotelSchema, ...jsonLd];
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
-    {noindex && <meta name="robots" content="noindex, follow" />}
-    <meta name="theme-color" content="#0f2340" />
+    <meta name="robots" content={noindex ? 'noindex, follow' : 'index, follow, max-image-preview:large'} />
+    <meta name="theme-color" content="#11264a" />
     <meta name="format-detection" content="telephone=no" />
+    <meta name="geo.region" content="BR-PR" />
+    <meta name="geo.placename" content="Londrina" />
 
+    <link rel="preload" href={frauncesLatin} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={figtreeLatin} as="font" type="font/woff2" crossorigin />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
-    <link rel="sitemap" href="/sitemap.xml" />
 
     <meta property="og:type" content="website" />
-    <meta property="og:locale" content={site.locale} />
-    <meta property="og:site_name" content={site.name} />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:site_name" content={hotel.name} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
-    <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image" content={ogImage} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content={`${site.name} — hotel econômico no centro de Londrina`} />
+    <meta property="og:image:alt" content="Hotel Triunfo — hotel econômico no centro de Londrina" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content={title} />
-    <meta name="twitter:description" content={description} />
-    <meta name="twitter:image" content={ogImageUrl} />
 
-    <script is:inline>
-      document.documentElement.classList.add('js');
-    </script>
-
-    {schemas.map((schema) => <script type="application/ld+json" set:html={JSON.stringify(schema)} />)}
+    <script is:inline>document.documentElement.classList.add('js')</script>
+    {[lodging, ...jsonLd].map((schema) => <script type="application/ld+json" set:html={JSON.stringify(schema)} />)}
   </head>
   <body>
     <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
@@ -104,26 +101,20 @@ const schemas = [hotelSchema, ...jsonLd];
       <slot />
     </main>
     <Footer />
-    <MobileActionBar />
+    <FloatingContact />
 
     <script>
-      // Revela os blocos ao entrarem na tela (respeita prefers-reduced-motion via CSS).
       const blocks = document.querySelectorAll<HTMLElement>('[data-reveal]');
-      if ('IntersectionObserver' in window) {
-        const observer = new IntersectionObserver(
-          (entries) =>
-            entries.forEach((entry) => {
-              if (entry.isIntersecting) {
-                entry.target.classList.add('is-visible');
-                observer.unobserve(entry.target);
-              }
-            }),
-          { rootMargin: '0px 0px -8% 0px', threshold: 0.05 },
-        );
-        blocks.forEach((block) => observer.observe(block));
-      } else {
-        blocks.forEach((block) => block.classList.add('is-visible'));
-      }
+      const io = new IntersectionObserver(
+        (entries) =>
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            entry.target.classList.add('is-visible');
+            io.unobserve(entry.target);
+          }),
+        { rootMargin: '0px 0px -6% 0px' },
+      );
+      blocks.forEach((block) => io.observe(block));
     </script>
   </body>
 </html>

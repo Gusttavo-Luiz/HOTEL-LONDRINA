@@ -1,59 +1,71 @@
 ---
-import { site } from '../config/site';
-import { featuredPhotos } from '../data/photos';
+import { hotel } from '../config/hotel';
+import { featuredPhotos } from '../content/gallery';
 import Photo from './Photo.astro';
+import { getPhoto } from '../lib/photos';
+import { showProvisional } from '../config/flags';
 import Icon from './Icon.astro';
+import type { IconName } from './icons';
+
+const profiles: { icon: IconName; label: string }[] = [
+  { icon: 'briefcase', label: 'Viagens a trabalho' },
+  { icon: 'calendar', label: 'Compromissos na cidade' },
+  { icon: 'mapPin', label: 'Passeios por Londrina' },
+];
 ---
 
 <section id="sobre" class="section about" aria-labelledby="sobre-title">
   <div class="container about__grid">
-    <div class="about__media" data-reveal>
-      <div class="about__photo">
-        <Photo
-          file={featuredPhotos.about.file}
-          alt={featuredPhotos.about.alt}
-          placeholderLabel="Recepção ou ambiente interno"
-          widths={[480, 720, 960]}
-          sizes="(min-width: 960px) 45vw, 100vw"
-        />
-      </div>
-      <div class="about__years" aria-hidden="true">
-        <span class="about__years-number">+{site.yearsOfHistory}</span>
-        <span class="about__years-label">anos de<br />história</span>
-      </div>
+    <div class="about__content" data-reveal>
+      <p class="eyebrow">Sobre o Hotel</p>
+      <h2 id="sobre-title">Tradição e praticidade no coração de Londrina.</h2>
+      <p class="lead">
+        O Hotel Triunfo oferece uma alternativa de hospedagem econômica para quem deseja ficar próximo à região central
+        de Londrina. Sua localização facilita o acesso a serviços, estabelecimentos comerciais e pontos de interesse da
+        cidade, tornando a estadia mais prática para diferentes perfis de viajantes.
+      </p>
+      <p>
+        Aqui você encontra o essencial para descansar bem: café da manhã incluso, Wi-Fi gratuito, estacionamento próprio
+        e uma recepção que atende 24 horas por dia.
+      </p>
+
+      <ul class="about__profiles" role="list" aria-label="Ideal para">
+        {profiles.map((p) => <li><span><Icon name={p.icon} size={20} /></span>{p.label}</li>)}
+      </ul>
+
+      <dl class="about__facts">
+        <div>
+          <dt>Categoria</dt>
+          <dd>{hotel.category}</dd>
+        </div>
+        <div>
+          <dt>Recepção</dt>
+          <dd>24 horas</dd>
+        </div>
+        <div>
+          <dt>Endereço</dt>
+          <dd>{hotel.address.street}</dd>
+        </div>
+      </dl>
     </div>
 
-    <div class="about__content" data-reveal>
-      <p class="eyebrow">Nossa história</p>
-      <h2 id="sobre-title">Uma tradição de hospitalidade há mais de 60 anos.</h2>
-      <p class="about__intro">Viajar é ótimo, mas nada como se sentir em casa.</p>
-      <p>
-        Há mais de seis décadas, o Hotel Triunfo recebe turistas, profissionais, estudantes, famílias e viajantes de
-        diversas regiões do Brasil.
-      </p>
-      <p>
-        Nosso compromisso é proporcionar uma hospedagem agradável, acessível e bem localizada em Londrina, com
-        acomodações simples e aconchegantes, equipe atenciosa e serviços que tornam a estadia mais prática.
-      </p>
-      <p>
-        Estamos no coração da cidade, próximos a restaurantes, bancos, farmácias, museus, comércio e ao terminal de
-        ônibus, facilitando a rotina de quem vem a Londrina a trabalho, estudo ou lazer.
-      </p>
-
-      <blockquote class="about__values">
-        <Icon name="shield" size={22} />
-        <p>
-          No Hotel Triunfo, valorizamos o respeito aos nossos hóspedes, a higiene, o bom atendimento e a economia.
-        </p>
-      </blockquote>
-
-      <ul class="about__audience" role="list" aria-label="Quem se hospeda conosco">
-        <li>Viagens a trabalho</li>
-        <li>Empresas</li>
-        <li>Estudantes</li>
-        <li>Famílias e turistas</li>
-        <li>Estadias longas</li>
-      </ul>
+    <div class="about__media" data-reveal>
+      <div class="about__photo about__photo--main">
+        <Photo file={featuredPhotos.about.file} alt={featuredPhotos.about.alt} label="Recepção" widths={[480, 720, 960]} sizes="(min-width: 960px) 34vw, 90vw">
+          <div slot="fallback" class="about__fallback" aria-hidden="true">
+            <Icon name="mapPin" size={30} />
+            <span>{hotel.address.street}</span>
+            <span>Centro · {hotel.address.city}</span>
+          </div>
+        </Photo>
+      </div>
+      {
+        (getPhoto(featuredPhotos.aboutSecondary.file) || showProvisional) && (
+          <div class="about__photo about__photo--small">
+            <Photo file={featuredPhotos.aboutSecondary.file} alt={featuredPhotos.aboutSecondary.alt} label="Área comum" widths={[360, 540]} sizes="(min-width: 960px) 18vw, 45vw" />
+          </div>
+        )
+      }
     </div>
   </div>
 </section>
@@ -65,121 +77,140 @@ import Icon from './Icon.astro';
     align-items: center;
   }
 
-  .about__media {
-    position: relative;
-    padding: 0 1.5rem 1.5rem 0;
+  .about__content {
+    display: grid;
+    gap: 1.15rem;
+    color: var(--gray-600);
   }
 
-  .about__media::before {
-    content: '';
-    position: absolute;
-    inset: 1.5rem 0 0 1.5rem;
-    border: 1.5px solid var(--gold-400);
-    border-radius: var(--radius-lg);
+  .about__content h2 {
+    font-size: clamp(1.9rem, 4.2vw, 2.8rem);
+  }
+
+  .about__content .lead {
+    color: var(--ink);
+  }
+
+  .about__profiles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin: 0.4rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .about__profiles li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.35rem 0.95rem 0.35rem 0.35rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--white);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--navy-900);
+  }
+
+  .about__profiles span {
+    display: inline-grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--sand-100);
+    color: var(--gold-700);
+  }
+
+  .about__facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin: 0.75rem 0 0;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .about__facts dt {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold-700);
+  }
+
+  .about__facts dd {
+    margin: 0.2rem 0 0;
+    font-weight: 600;
+    color: var(--navy-900);
+  }
+
+  .about__media {
+    position: relative;
+    min-height: 320px;
   }
 
   .about__photo {
-    position: relative;
-    aspect-ratio: 4 / 5;
-    border-radius: var(--radius-lg);
     overflow: hidden;
-    box-shadow: var(--shadow-lg);
+    border-radius: var(--radius-lg);
+    background: var(--sand-200);
   }
 
-  .about__photo :global(img),
   .about__photo :global(picture),
-  .about__photo :global(.photo-placeholder) {
+  .about__photo :global(img),
+  .about__photo :global(.photo-pending) {
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
 
-  .about__years {
-    position: absolute;
-    left: -0.5rem;
-    bottom: 0;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 1.1rem 1.4rem;
-    border-radius: var(--radius);
-    background: var(--navy-900);
-    color: var(--white);
+  .about__photo--main {
+    aspect-ratio: 4 / 5;
+    width: 82%;
     box-shadow: var(--shadow-lg);
   }
 
-  .about__years-number {
+  .about__photo--small {
+    position: absolute;
+    right: 0;
+    bottom: -1.5rem;
+    width: 46%;
+    aspect-ratio: 1;
+    border: 6px solid var(--offwhite);
+    box-shadow: var(--shadow);
+  }
+
+  .about__fallback {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    height: 100%;
+    padding: 2rem;
+    background:
+      radial-gradient(circle at 30% 20%, rgb(207 169 95 / 0.25), transparent 60%),
+      var(--navy-900);
+    color: var(--white);
     font-family: var(--font-display);
-    font-size: clamp(2.5rem, 6vw, 3.25rem);
-    font-weight: 600;
-    line-height: 1;
+    font-size: 1.25rem;
+    text-align: center;
+  }
+
+  @media (max-width: 959px) {
+    .about__media:has(.about__fallback) {
+      display: none;
+    }
+  }
+
+  .about__fallback :global(svg) {
     color: var(--gold-300);
-  }
-
-  .about__years-label {
-    font-size: 0.875rem;
-    font-weight: 600;
-    line-height: 1.25;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-  }
-
-  .about__content {
-    display: grid;
-    gap: 1.1rem;
-    color: var(--ink-soft);
-  }
-
-  .about__content h2 {
-    font-size: clamp(1.85rem, 4vw, 2.75rem);
-    margin-bottom: 0.25rem;
-  }
-
-  .about__intro {
-    font-family: var(--font-display);
-    font-size: 1.35rem;
-    color: var(--navy-800);
-  }
-
-  .about__values {
-    display: flex;
-    gap: 0.9rem;
-    margin: 0.5rem 0 0;
-    padding: 1.1rem 1.25rem;
-    border-left: 3px solid var(--gold-500);
-    border-radius: 0 var(--radius) var(--radius) 0;
-    background: var(--sand-100);
-    color: var(--navy-900);
-    font-weight: 600;
-  }
-
-  .about__values svg {
-    flex: none;
-    color: var(--gold-700);
-  }
-
-  .about__audience {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin: 0.25rem 0 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .about__audience li {
-    padding: 0.35rem 0.85rem;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    background: var(--white);
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--navy-800);
   }
 
   @media (min-width: 960px) {
     .about__grid {
-      grid-template-columns: 0.9fr 1.1fr;
+      grid-template-columns: 1.05fr 0.95fr;
     }
   }
 </style>

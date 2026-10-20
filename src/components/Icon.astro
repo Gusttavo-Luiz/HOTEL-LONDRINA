@@ -5,12 +5,11 @@ interface Props {
   name: IconName;
   size?: number;
   class?: string;
-  /** Texto acessível; se omitido, o ícone é decorativo. */
+  /** Texto acessível; sem ele o ícone é decorativo. */
   label?: string;
-  strokeWidth?: number;
 }
 
-const { name, size = 24, class: className, label, strokeWidth = 1.75 } = Astro.props;
+const { name, size = 24, class: className, label } = Astro.props;
 ---
 
 <svg
@@ -20,7 +19,7 @@ const { name, size = 24, class: className, label, strokeWidth = 1.75 } = Astro.p
   viewBox="0 0 24 24"
   fill="none"
   stroke="currentColor"
-  stroke-width={strokeWidth}
+  stroke-width="1.75"
   stroke-linecap="round"
   stroke-linejoin="round"
   aria-hidden={label ? undefined : 'true'}

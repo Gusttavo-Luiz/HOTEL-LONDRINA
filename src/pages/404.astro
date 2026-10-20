@@ -1,28 +1,27 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Icon from '../components/Icon.astro';
+import { hotel, phoneHref } from '../config/hotel';
 ---
 
-<BaseLayout title="Página não encontrada | Hotel Triunfo Londrina" description="A página que você procura não foi encontrada." noindex>
-  <section class="section not-found">
-    <div class="container not-found__inner">
+<BaseLayout title="Página não encontrada | Hotel Triunfo Londrina" description="A página procurada não foi encontrada." noindex>
+  <section class="section">
+    <div class="container nf">
       <p class="eyebrow">Erro 404</p>
-      <h1>Esta página não foi encontrada.</h1>
-      <p class="lead">O endereço pode ter mudado. Volte ao início ou fale com a nossa recepção, que atende 24 horas.</p>
-      <div class="not-found__actions">
-        <a href="/" class="btn btn--navy"><Icon name="arrowRight" /> Ir para o início</a>
-        <a href="/#reservas" class="btn btn--primary">Faça sua reserva</a>
+      <h1>Página não encontrada.</h1>
+      <p class="lead">O endereço pode ter mudado. Volte ao início ou ligue para a recepção: {hotel.phone.display}.</p>
+      <div class="nf__actions">
+        <a href="/" class="btn btn--navy">Ir para o início</a>
+        <a href={phoneHref} class="btn btn--outline">Ligar para a recepção</a>
       </div>
     </div>
   </section>
 </BaseLayout>
 
 <style>
-  .not-found__inner {
+  .nf {
     display: grid;
-    gap: 1.25rem;
+    gap: 1.2rem;
     justify-items: start;
-    max-width: 40rem;
     min-height: 50vh;
     align-content: center;
   }
@@ -31,7 +30,7 @@ import Icon from '../components/Icon.astro';
     font-size: clamp(2rem, 5vw, 3rem);
   }
 
-  .not-found__actions {
+  .nf__actions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;

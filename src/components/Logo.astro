@@ -1,8 +1,8 @@
 ---
 /**
  * Marca provisória em texto. Ao receber o logotipo oficial, salve-o em
- * `public/logo.svg` (ou PNG) e substitua o conteúdo deste componente por:
- * <img src="/logo.svg" alt="Hotel Triunfo Londrina" width="..." height="..." />
+ * public/logo.svg e troque o conteúdo por:
+ *   <img src="/logo.svg" alt="Hotel Triunfo" width="…" height="…" />
  */
 interface Props {
   tone?: 'dark' | 'light';
@@ -12,60 +12,55 @@ const { tone = 'dark' } = Astro.props;
 ---
 
 <span class:list={['logo', `logo--${tone}`]}>
-  <svg class="logo__mark" viewBox="0 0 40 40" width="40" height="40" aria-hidden="true">
-    <rect x="1" y="1" width="38" height="38" rx="10" fill="currentColor" />
-    <path d="M11 13h18M20 13v15" stroke="var(--logo-accent)" stroke-width="3" stroke-linecap="round" />
-    <path d="M14 30h12" stroke="var(--logo-accent)" stroke-width="1.6" stroke-linecap="round" opacity="0.7" />
+  <svg class="logo__mark" viewBox="0 0 44 44" width="42" height="42" aria-hidden="true">
+    <circle cx="22" cy="22" r="20.5" fill="none" stroke="currentColor" stroke-width="1.5"></circle>
+    <path d="M13 15.5h18M22 15.5V31" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"></path>
+    <path d="M17 31h10" class="logo__accent" stroke-width="1.6" stroke-linecap="round"></path>
   </svg>
   <span class="logo__text">
     <span class="logo__name">Hotel Triunfo</span>
-    <span class="logo__city">Londrina</span>
+    <span class="logo__city">Londrina · PR</span>
   </span>
 </span>
 
 <style>
   .logo {
-    --logo-accent: var(--gold-400);
     display: inline-flex;
     align-items: center;
-    gap: 0.65rem;
-    color: var(--navy-900);
+    gap: 0.7rem;
     line-height: 1;
+    color: var(--navy-900);
   }
 
   .logo__mark {
     flex: none;
-    width: 40px;
-    height: 40px;
+  }
+
+  .logo__accent {
+    stroke: var(--gold-500);
   }
 
   .logo__text {
     display: grid;
-    gap: 0.2rem;
+    gap: 0.28rem;
   }
 
   .logo__name {
     font-family: var(--font-display);
-    font-size: 1.3rem;
+    font-size: 1.32rem;
     font-weight: 600;
     letter-spacing: -0.01em;
-    color: var(--navy-900);
   }
 
   .logo__city {
     font-size: 0.6875rem;
     font-weight: 700;
-    letter-spacing: 0.28em;
+    letter-spacing: 0.24em;
     text-transform: uppercase;
     color: var(--gold-700);
   }
 
   .logo--light {
-    color: var(--white);
-    --logo-accent: var(--navy-900);
-  }
-
-  .logo--light .logo__name {
     color: var(--white);
   }
 

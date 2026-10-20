@@ -1,161 +1,114 @@
 ---
-import { reviews, reviewsPeriod } from '../data/reviews';
-import { site } from '../config/site';
+import { hotel } from '../config/hotel';
 import SectionHeading from './SectionHeading.astro';
 import Icon from './Icon.astro';
 
-const initials = (name: string) =>
-  name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]!.toUpperCase())
-    .join('');
-
-const formatDate = (iso?: string) =>
-  iso ? new Date(`${iso}T12:00:00`).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) : null;
+const { value, count, updatedAt } = hotel.googleRating;
+const pct = (value / 5) * 100;
+const starPath =
+  'M12 2.5l2.94 5.96 6.56.95-4.75 4.63 1.12 6.54L12 17.5l-5.87 3.08 1.12-6.54L2.5 9.41l6.56-.95z';
+const [year, month] = updatedAt.split('-');
+const monthName = new Date(Number(year), Number(month) - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 ---
 
-<section id="avaliacoes" class="section" aria-labelledby="avaliacoes-title">
-  <div class="container">
-    <div class="reviews__head">
-      <SectionHeading eyebrow="Avaliações" title="A experiência de quem já se hospedou conosco." id="avaliacoes-title">
-        Depoimentos históricos de hóspedes, publicados entre {reviewsPeriod}.
-      </SectionHeading>
-      <a href={site.links.reviews} class="btn btn--outline reviews__link" target="_blank" rel="noopener">
-        Ver avaliações <Icon name="external" size={18} />
+<section id="avaliacoes" class="section section--navy" aria-labelledby="avaliacoes-title">
+  <div class="container reviews">
+    <SectionHeading eyebrow="Avaliações" title="A experiência de quem já se hospedou conosco." id="avaliacoes-title">
+      Nossa reputação é construída por hóspedes reais. Veja todas as opiniões, positivas e críticas, diretamente no
+      Google.
+    </SectionHeading>
+
+    <div class="reviews__card" data-reveal>
+      <p class="reviews__score">
+        <span class="reviews__value">{value.toLocaleString('pt-BR', { minimumFractionDigits: 1 })}</span>
+        <span class="reviews__of">de 5</span>
+      </p>
+      <svg class="reviews__stars" viewBox="0 0 130 24" width="150" height="28" role="img" aria-label={`Nota ${value.toLocaleString('pt-BR')} de 5 no Google`}>
+        <defs>
+          <clipPath id="estrelas-nota"><rect x="0" y="0" width={(130 * pct) / 100} height="24" /></clipPath>
+          <g id="estrelas">
+            {Array.from({ length: 5 }, (_, i) => (
+              <path transform={`translate(${i * 26} 0)`} d={starPath} />
+            ))}
+          </g>
+        </defs>
+        <use href="#estrelas" class="reviews__stars-bg" />
+        <use href="#estrelas" class="reviews__stars-fg" clip-path="url(#estrelas-nota)" />
+      </svg>
+      <p class="reviews__count">
+        <strong>{count.toLocaleString('pt-BR')} avaliações</strong> no Google
+      </p>
+      <p class="reviews__updated">Dados de referência de {monthName}.</p>
+      <a href={hotel.links.googleReviews} class="btn btn--gold" target="_blank" rel="noopener">
+        Ver avaliações no Google <Icon name="external" size={18} />
         <span class="visually-hidden">(abre em nova aba)</span>
       </a>
     </div>
-
-    <ul class="reviews" role="list">
-      {
-        reviews.map((review) => (
-          <li class="review" data-reveal>
-            <figure>
-              <div class="review__rating" role="img" aria-label={`Nota ${review.rating} de 5`}>
-                {Array.from({ length: 5 }, (_, i) => (
-                  <Icon name="star" size={18} class={i < review.rating ? 'is-on' : 'is-off'} />
-                ))}
-              </div>
-              <blockquote>
-                <p>“{review.text}”</p>
-              </blockquote>
-              <figcaption>
-                <span class="review__avatar" aria-hidden="true">
-                  {initials(review.author)}
-                </span>
-                <span>
-                  <strong>{review.author}</strong>
-                  <small>{formatDate(review.date) ?? `Publicada entre ${reviewsPeriod}`}</small>
-                </span>
-              </figcaption>
-            </figure>
-          </li>
-        ))
-      }
-    </ul>
   </div>
 </section>
 
 <style>
-  .reviews__head {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 0 2rem;
-  }
-
-  .reviews__link {
-    margin-bottom: clamp(2rem, 5vw, 3.25rem);
-  }
-
   .reviews {
-    columns: 1;
-    column-gap: 1.25rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .review {
-    break-inside: avoid;
-    margin-bottom: 1.25rem;
-  }
-
-  .review figure {
     display: grid;
-    gap: 1rem;
-    margin: 0;
-    padding: 1.6rem;
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    background: var(--white);
-    box-shadow: var(--shadow-sm);
+    gap: 2rem;
+    align-items: center;
   }
 
-  .review__rating {
+  .reviews :global(.heading) {
+    margin-bottom: 0;
+  }
+
+  .reviews__card {
+    display: grid;
+    justify-items: center;
+    gap: 0.6rem;
+    padding: clamp(1.75rem, 4vw, 2.5rem);
+    border: 1px solid rgb(255 255 255 / 0.12);
+    border-radius: var(--radius-lg);
+    background: rgb(255 255 255 / 0.04);
+    text-align: center;
+  }
+
+  .reviews__score {
     display: flex;
-    gap: 0.15rem;
+    align-items: baseline;
+    gap: 0.5rem;
+    color: var(--white);
   }
 
-  .review__rating :global(.is-on) {
-    color: var(--gold-500);
+  .reviews__value {
+    font-family: var(--font-display);
+    font-size: clamp(3.5rem, 8vw, 4.5rem);
+    font-weight: 500;
+    line-height: 1;
+  }
+
+  .reviews__of {
+    font-size: 1.125rem;
+    color: rgb(244 238 228 / 0.7);
+  }
+
+  .reviews__stars-bg {
+    fill: rgb(255 255 255 / 0.22);
+  }
+
+  .reviews__stars-fg {
     fill: var(--gold-400);
   }
 
-  .review__rating :global(.is-off) {
-    color: var(--sand-300);
+  .reviews__count {
+    color: var(--white);
   }
 
-  blockquote {
-    margin: 0;
-    font-size: 1.0625rem;
-    color: var(--ink);
-  }
-
-  figcaption {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--line);
-  }
-
-  figcaption strong {
-    display: block;
-    color: var(--navy-900);
-    line-height: 1.3;
-  }
-
-  figcaption small {
-    color: var(--ink-soft);
+  .reviews__updated {
+    margin-bottom: 0.75rem;
     font-size: 0.8125rem;
+    color: rgb(244 238 228 / 0.65);
   }
 
-  .review__avatar {
-    display: inline-grid;
-    flex: none;
-    place-items: center;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    background: var(--sand-100);
-    color: var(--navy-800);
-    font-weight: 700;
-    font-size: 0.9375rem;
-  }
-
-  @media (min-width: 700px) {
+  @media (min-width: 900px) {
     .reviews {
-      columns: 2;
-    }
-  }
-
-  @media (min-width: 1080px) {
-    .reviews {
-      columns: 3;
+      grid-template-columns: 1.2fr 1fr;
     }
   }
 </style>

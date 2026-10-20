@@ -1,231 +1,61 @@
 ---
 import { getImage } from 'astro:assets';
-import { galleryCategories, galleryPhotos } from '../data/photos';
+import { galleryPhotos } from '../content/gallery';
 import { getPhoto } from '../lib/photos';
-import { site } from '../config/site';
+import { showProvisional } from '../config/flags';
 import SectionHeading from './SectionHeading.astro';
 import Photo from './Photo.astro';
 import Icon from './Icon.astro';
+import Lightbox from './react/Lightbox';
 
-const items = await Promise.all(
-  galleryPhotos.map(async (photo) => {
-    const image = getPhoto(photo.file);
-    const large = image
-      ? await getImage({ src: image, width: Math.min(1800, image.width), format: 'webp', quality: 82 })
-      : undefined;
-    return { ...photo, image, largeSrc: large?.src };
+const available = galleryPhotos.filter((p) => getPhoto(p.file));
+const lightboxItems = await Promise.all(
+  available.map(async (p) => {
+    const image = getPhoto(p.file)!;
+    const large = await getImage({ src: image, width: Math.min(1800, image.width), format: 'webp', quality: 82 });
+    return { src: large.src, alt: p.alt, label: p.label };
   }),
 );
-
-const visible = items.filter((item) => item.image || site.showPhotoPlaceholders);
-const categories = galleryCategories.filter((cat) => visible.some((item) => item.category === cat.id));
-const labelOf = (id: string) => galleryCategories.find((cat) => cat.id === id)?.label ?? id;
-const hasRealPhotos = items.some((item) => item.image);
+const pending = showProvisional ? galleryPhotos.filter((p) => !getPhoto(p.file)) : [];
+const show = available.length > 0 || pending.length > 0;
 ---
 
-<section id="fotos" class="section section--sand" aria-labelledby="fotos-title">
-  <div class="container">
-    <SectionHeading eyebrow="Galeria" title="Conheça nossos espaços." id="fotos-title">
-      Fotos do Hotel Triunfo para você conhecer o padrão da hospedagem antes de chegar.
-    </SectionHeading>
+{
+  show && (
+    <section id="galeria" class="section section--white" aria-labelledby="galeria-title">
+      <div class="container">
+        <SectionHeading eyebrow="Galeria" title="Conheça nossos ambientes." id="galeria-title">
+          Fotos do Hotel Triunfo para você conhecer a hospedagem antes de chegar.
+        </SectionHeading>
 
-    {
-      visible.length === 0 ? (
-        <p class="gallery__empty">Em breve, novas fotos do hotel.</p>
-      ) : (
-        <div data-gallery>
-          {categories.length > 1 && (
-            <div class="gallery__filters" role="group" aria-label="Filtrar fotos por ambiente">
-              <button type="button" class="chip" aria-pressed="true" data-filter="all">
-                Todas
-              </button>
-              {categories.map((cat) => (
-                <button type="button" class="chip" aria-pressed="false" data-filter={cat.id}>
-                  {cat.label}
+        <Lightbox client:idle items={lightboxItems}>
+          <ul class="gallery" role="list">
+            {available.map((p, i) => (
+              <li>
+                <button type="button" class="gallery__item" data-lightbox-index={i} aria-label={`Ampliar foto: ${p.alt}`}>
+                  <Photo file={p.file} alt={p.alt} widths={[400, 640, 960]} sizes="(min-width: 1024px) 33vw, 50vw" />
+                  <span class="gallery__tag">
+                    {p.label} <Icon name="maximize" size={14} />
+                  </span>
                 </button>
-              ))}
-            </div>
-          )}
-
-          <ul class="gallery__grid" role="list">
-            {visible.map((item) => (
-              <li class="gallery__item" data-category={item.category}>
-                {item.image ? (
-                  <button
-                    type="button"
-                    class="gallery__open"
-                    data-lightbox-src={item.largeSrc}
-                    data-lightbox-alt={item.alt}
-                    data-lightbox-caption={labelOf(item.category)}
-                    aria-label={`Ampliar foto: ${item.alt}`}
-                  >
-                    <Photo file={item.file} alt={item.alt} widths={[400, 640, 900]} sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw" />
-                    <span class="gallery__tag">{labelOf(item.category)}</span>
-                  </button>
-                ) : (
-                  <div class="gallery__slot">
-                    <Photo file={item.file} alt={item.alt} placeholderLabel={labelOf(item.category)} />
-                  </div>
-                )}
+              </li>
+            ))}
+            {pending.map((p) => (
+              <li>
+                <div class="gallery__item gallery__item--pending">
+                  <Photo file={p.file} alt={p.alt} label={p.label} />
+                </div>
               </li>
             ))}
           </ul>
-
-          {!hasRealPhotos && (
-            <p class="gallery__note">
-              <Icon name="info" size={18} /> As fotografias oficiais do hotel serão publicadas em breve.
-            </p>
-          )}
-
-          <dialog class="lightbox" data-lightbox aria-label="Visualização ampliada da foto">
-            <div class="lightbox__frame">
-              <figure class="lightbox__figure">
-                <img class="lightbox__img" alt="" data-lightbox-img />
-                <figcaption class="lightbox__caption">
-                  <span data-lightbox-text />
-                  <span class="lightbox__count" data-lightbox-count />
-                </figcaption>
-              </figure>
-              <button type="button" class="lightbox__btn lightbox__close" data-lightbox-close aria-label="Fechar">
-                <Icon name="close" size={24} />
-              </button>
-              <button type="button" class="lightbox__btn lightbox__prev" data-lightbox-prev aria-label="Foto anterior">
-                <Icon name="chevronLeft" size={28} />
-              </button>
-              <button type="button" class="lightbox__btn lightbox__next" data-lightbox-next aria-label="Próxima foto">
-                <Icon name="chevronRight" size={28} />
-              </button>
-            </div>
-          </dialog>
-        </div>
-      )
-    }
-  </div>
-</section>
-
-<script>
-  const root = document.querySelector<HTMLElement>('[data-gallery]');
-
-  if (root) {
-    const items = Array.from(root.querySelectorAll<HTMLLIElement>('.gallery__item'));
-    const filters = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-filter]'));
-    const dialog = root.querySelector<HTMLDialogElement>('[data-lightbox]')!;
-    const img = dialog.querySelector<HTMLImageElement>('[data-lightbox-img]')!;
-    const text = dialog.querySelector<HTMLElement>('[data-lightbox-text]')!;
-    const count = dialog.querySelector<HTMLElement>('[data-lightbox-count]')!;
-    const prevBtn = dialog.querySelector<HTMLButtonElement>('[data-lightbox-prev]')!;
-    const nextBtn = dialog.querySelector<HTMLButtonElement>('[data-lightbox-next]')!;
-    let current = 0;
-    let opener: HTMLElement | null = null;
-
-    // Fotos clicáveis atualmente visíveis (respeitando o filtro).
-    const openers = () =>
-      items
-        .filter((item) => !item.hidden)
-        .map((item) => item.querySelector<HTMLButtonElement>('[data-lightbox-src]'))
-        .filter((btn): btn is HTMLButtonElement => Boolean(btn));
-
-    filters.forEach((button) => {
-      button.addEventListener('click', () => {
-        const value = button.dataset.filter;
-        filters.forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
-        items.forEach((item) => {
-          item.hidden = value !== 'all' && item.dataset.category !== value;
-        });
-      });
-    });
-
-    const show = (index: number) => {
-      const list = openers();
-      if (!list.length) return;
-      current = (index + list.length) % list.length;
-      const btn = list[current];
-      img.src = btn.dataset.lightboxSrc ?? '';
-      img.alt = btn.dataset.lightboxAlt ?? '';
-      text.textContent = `${btn.dataset.lightboxCaption ?? ''} — ${btn.dataset.lightboxAlt ?? ''}`;
-      count.textContent = `${current + 1} de ${list.length}`;
-      const single = list.length < 2;
-      prevBtn.hidden = single;
-      nextBtn.hidden = single;
-    };
-
-    root.addEventListener('click', (event) => {
-      const btn = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-lightbox-src]');
-      if (!btn) return;
-      opener = btn;
-      show(openers().indexOf(btn));
-      dialog.showModal();
-    });
-
-    prevBtn.addEventListener('click', () => show(current - 1));
-    nextBtn.addEventListener('click', () => show(current + 1));
-    dialog.querySelector('[data-lightbox-close]')!.addEventListener('click', () => dialog.close());
-
-    // Fecha ao clicar fora da imagem.
-    dialog.addEventListener('click', (event) => {
-      if (event.target === dialog || (event.target as HTMLElement).classList.contains('lightbox__frame')) dialog.close();
-    });
-
-    dialog.addEventListener('keydown', (event) => {
-      if (event.key === 'ArrowLeft') show(current - 1);
-      if (event.key === 'ArrowRight') show(current + 1);
-    });
-
-    // Gestos de deslizar no celular.
-    let touchX: number | null = null;
-    dialog.addEventListener('touchstart', (e) => (touchX = e.touches[0].clientX), { passive: true });
-    dialog.addEventListener('touchend', (e) => {
-      if (touchX === null) return;
-      const delta = e.changedTouches[0].clientX - touchX;
-      if (Math.abs(delta) > 50) show(current + (delta < 0 ? 1 : -1));
-      touchX = null;
-    });
-
-    dialog.addEventListener('close', () => {
-      document.documentElement.classList.remove('no-scroll');
-      opener?.focus();
-    });
-    dialog.addEventListener('toggle', () => {
-      if (dialog.open) document.documentElement.classList.add('no-scroll');
-    });
-  }
-</script>
+        </Lightbox>
+      </div>
+    </section>
+  )
+}
 
 <style>
-  .gallery__filters {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-bottom: 1.75rem;
-  }
-
-  .chip {
-    min-height: 40px;
-    padding: 0.45rem 1rem;
-    border: 1.5px solid var(--sand-300);
-    border-radius: 999px;
-    background: var(--white);
-    color: var(--navy-900);
-    font-size: 0.9375rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition:
-      background-color 0.2s var(--ease),
-      border-color 0.2s var(--ease),
-      color 0.2s var(--ease);
-  }
-
-  .chip:hover {
-    border-color: var(--navy-700);
-  }
-
-  .chip[aria-pressed='true'] {
-    border-color: var(--navy-900);
-    background: var(--navy-900);
-    color: var(--white);
-  }
-
-  .gallery__grid {
+  .gallery {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 0.75rem;
@@ -234,42 +64,33 @@ const hasRealPhotos = items.some((item) => item.image);
     list-style: none;
   }
 
-  .gallery__item[hidden] {
-    display: none;
-  }
-
-  .gallery__open,
-  .gallery__slot {
+  .gallery__item {
     position: relative;
     display: block;
     width: 100%;
     aspect-ratio: 4 / 3;
     padding: 0;
+    overflow: hidden;
     border: 0;
     border-radius: var(--radius);
-    overflow: hidden;
     background: var(--sand-200);
-  }
-
-  .gallery__open {
     cursor: zoom-in;
   }
 
-  .gallery__open :global(img),
-  .gallery__open :global(picture),
-  .gallery__slot :global(.photo-placeholder) {
+  .gallery__item--pending {
+    cursor: default;
+  }
+
+  .gallery__item :global(picture),
+  .gallery__item :global(img),
+  .gallery__item :global(.photo-pending) {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.5s var(--ease);
+    transition: transform 0.6s var(--ease);
   }
 
-  .gallery__slot :global(.photo-placeholder) {
-    min-height: 0;
-    border-radius: var(--radius);
-  }
-
-  .gallery__open:hover :global(img) {
+  .gallery__item:hover :global(img) {
     transform: scale(1.04);
   }
 
@@ -277,110 +98,85 @@ const hasRealPhotos = items.some((item) => item.image);
     position: absolute;
     left: 0.65rem;
     bottom: 0.65rem;
-    padding: 0.25rem 0.65rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.7rem;
     border-radius: 999px;
-    background: rgb(10 26 49 / 0.78);
+    background: rgb(11 26 48 / 0.78);
     color: var(--white);
     font-size: 0.8125rem;
     font-weight: 600;
   }
 
-  .gallery__note,
-  .gallery__empty {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-top: 1.25rem;
-    font-size: 0.9375rem;
-    color: var(--ink-soft);
-  }
-
-  @media (min-width: 640px) {
-    .gallery__grid {
+  @media (min-width: 768px) {
+    .gallery {
       grid-template-columns: repeat(3, 1fr);
       gap: 1rem;
     }
-  }
 
-  @media (min-width: 1024px) {
-    .gallery__grid {
-      grid-template-columns: repeat(4, 1fr);
-    }
-
-    .gallery__item:first-child {
+    .gallery li:first-child {
       grid-column: span 2;
       grid-row: span 2;
     }
 
-    .gallery__item:first-child .gallery__open,
-    .gallery__item:first-child .gallery__slot {
+    .gallery li:first-child .gallery__item {
       height: 100%;
       aspect-ratio: auto;
     }
   }
 
   /* Lightbox */
-  .lightbox {
+  :global(.lightbox) {
     width: 100vw;
     max-width: 100vw;
     height: 100dvh;
     max-height: 100dvh;
     margin: 0;
-    padding: 0;
+    padding: 4.5rem 1rem 1.5rem;
     border: 0;
-    background: rgb(6 16 31 / 0.94);
+    background: rgb(6 15 29 / 0.95);
     color: var(--white);
   }
 
-  .lightbox::backdrop {
-    background: rgb(6 16 31 / 0.6);
-  }
-
-  .lightbox[open] {
-    animation: fade-in 0.2s var(--ease);
-  }
-
-  .lightbox__frame {
-    position: relative;
+  :global(.lightbox[open]) {
     display: grid;
     place-items: center;
-    width: 100%;
-    height: 100%;
-    padding: 4.5rem 1rem 1.5rem;
   }
 
-  .lightbox__figure {
+  :global(.lightbox::backdrop) {
+    background: rgb(6 15 29 / 0.6);
+  }
+
+  :global(.lightbox__figure) {
     display: grid;
-    gap: 0.85rem;
     justify-items: center;
+    gap: 0.85rem;
     margin: 0;
-    max-width: min(1400px, 100%);
   }
 
-  .lightbox__img {
+  :global(.lightbox__img) {
     max-width: 100%;
     max-height: calc(100dvh - 9rem);
-    width: auto;
     border-radius: var(--radius-sm);
     object-fit: contain;
   }
 
-  .lightbox__caption {
+  :global(.lightbox figcaption) {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
     gap: 0.5rem 1rem;
     font-size: 0.9375rem;
-    text-align: center;
     color: rgb(255 255 255 / 0.85);
   }
 
-  .lightbox__count {
+  :global(.lightbox__count) {
     color: var(--gold-300);
     font-weight: 600;
   }
 
-  .lightbox__btn {
+  :global(.lightbox__btn) {
     position: absolute;
     display: inline-grid;
     place-items: center;
@@ -391,56 +187,41 @@ const hasRealPhotos = items.some((item) => item.image);
     background: rgb(255 255 255 / 0.08);
     color: var(--white);
     cursor: pointer;
-    transition: background-color 0.2s var(--ease);
   }
 
-  .lightbox__btn:hover {
+  :global(.lightbox__btn:hover) {
     background: rgb(255 255 255 / 0.2);
   }
 
-  .lightbox__btn[hidden] {
-    display: none;
-  }
-
-  .lightbox__close {
+  :global(.lightbox__close) {
     top: 1rem;
     right: 1rem;
   }
 
-  .lightbox__prev,
-  .lightbox__next {
+  :global(.lightbox__prev),
+  :global(.lightbox__next) {
     top: 50%;
     transform: translateY(-50%);
   }
 
-  .lightbox__prev {
+  :global(.lightbox__prev) {
     left: 1rem;
   }
 
-  .lightbox__next {
+  :global(.lightbox__next) {
     right: 1rem;
   }
 
   @media (max-width: 639px) {
-    .lightbox__prev,
-    .lightbox__next {
+    :global(.lightbox__prev),
+    :global(.lightbox__next) {
       top: auto;
       bottom: 1rem;
       transform: none;
     }
 
-    .lightbox__frame {
+    :global(.lightbox) {
       padding-bottom: 5rem;
-    }
-
-    .lightbox__img {
-      max-height: calc(100dvh - 12rem);
-    }
-  }
-
-  @keyframes fade-in {
-    from {
-      opacity: 0;
     }
   }
 </style>
