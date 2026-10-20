@@ -97,6 +97,11 @@ test.describe('Navegação', () => {
     await toggle.click();
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
     await expect(menu).toBeVisible();
+    // O painel precisa ocupar a tela abaixo do cabeçalho (regressão: altura de 32px).
+    const box = (await menu.boundingBox())!;
+    const viewport = page.viewportSize()!;
+    expect(box.height).toBeGreaterThan(viewport.height * 0.6);
+    await expect(menu.getByRole('link', { name: 'Contato' })).toBeInViewport();
     await page.keyboard.press('Escape');
     await expect(menu).toBeHidden();
     await expect(toggle).toBeFocused();
