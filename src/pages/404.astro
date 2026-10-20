@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { withBase } from '../lib/url';
 import { hotel, phoneHref } from '../config/hotel';
 ---
 
@@ -10,7 +11,7 @@ import { hotel, phoneHref } from '../config/hotel';
       <h1>Página não encontrada.</h1>
       <p class="lead">O endereço pode ter mudado. Volte ao início ou ligue para a recepção: {hotel.phone.display}.</p>
       <div class="nf__actions">
-        <a href="/" class="btn btn--navy">Ir para o início</a>
+        <a href={withBase('/')} class="btn btn--navy">Ir para o início</a>
         <a href={phoneHref} class="btn btn--outline">Ligar para a recepção</a>
       </div>
     </div>

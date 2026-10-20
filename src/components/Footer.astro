@@ -3,6 +3,7 @@ import { hotel, phoneHref, whatsappUrl } from '../config/hotel';
 import { navigation } from '../content/navigation';
 import Logo from './Logo.astro';
 import Icon from './Icon.astro';
+import { withBase } from '../lib/url';
 
 const year = new Date().getFullYear();
 const wa = whatsappUrl();
@@ -13,14 +14,14 @@ const wa = whatsappUrl();
     <div class="footer__brand">
       <Logo tone="light" />
       <p>{hotel.tradeName}. Hospedagem econômica e tradicional no centro de Londrina, com recepção 24 horas.</p>
-      <a href="/#reservar" class="btn btn--gold btn--sm">Consultar disponibilidade</a>
+      <a href={withBase('/#reservar')} class="btn btn--gold btn--sm">Consultar disponibilidade</a>
     </div>
 
     <nav aria-label="Rodapé">
       <h2 class="footer__title">Navegação</h2>
       <ul role="list">
         {navigation.map((item) => <li><a href={item.href}>{item.label}</a></li>)}
-        <li><a href="/#duvidas">Perguntas frequentes</a></li>
+        <li><a href={withBase('/#duvidas')}>Perguntas frequentes</a></li>
       </ul>
     </nav>
 
@@ -57,7 +58,7 @@ const wa = whatsappUrl();
   <div class="footer__bottom">
     <div class="container footer__bottom-inner">
       <p>© {year} {hotel.name} · Londrina - PR. Todos os direitos reservados.</p>
-      <a href="/politica-de-privacidade/">Política de Privacidade</a>
+      <a href={withBase('/politica-de-privacidade/')}>Política de Privacidade</a>
     </div>
   </div>
 </footer>

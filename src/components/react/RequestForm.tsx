@@ -1,6 +1,8 @@
 import { useEffect, useId, useRef, useState, type SyntheticEvent } from 'react';
 import { addDaysISO, nights, todayISO, validateRequest, LIMITS, type FieldErrors, type Subject } from '../../lib/validation';
 import { onPrefill } from '../../lib/prefill';
+import { withBase } from '../../lib/url';
+import { demoMode } from '../../config/flags';
 import { Icon } from './Icon';
 import './request-form.css';
 
@@ -15,6 +17,7 @@ type Status =
   | { kind: 'idle' }
   | { kind: 'sending' }
   | { kind: 'success'; id: number }
+  | { kind: 'demo' }
   | { kind: 'error'; message: string };
 
 const initial = {
@@ -103,9 +106,15 @@ export default function RequestForm({ phoneDisplay, phoneHref, whatsappHref, roo
       return;
     }
 
+    if (demoMode) {
+      // Demonstração: dados validados, mas nada é enviado ou gravado.
+      setStatus({ kind: 'demo' });
+      return;
+    }
+
     setStatus({ kind: 'sending' });
     try {
-      const response = await fetch('/api/solicitacoes', {
+      const response = await fetch(withBase('/api/solicitacoes'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({ ...payload, elapsed: Date.now() - startedAt.current }),
@@ -324,7 +333,7 @@ export default function RequestForm({ phoneDisplay, phoneHref, whatsappHref, roo
           <input type="checkbox" checked={values.consent} onChange={(e) => set('consent')(e.target.checked)} {...fieldProps('consent')} />
           <span>
             Autorizo o Hotel Triunfo a usar estes dados para responder à minha solicitação, conforme a{' '}
-            <a href="/politica-de-privacidade/">Política de Privacidade</a>. <span className="req" aria-hidden="true">*</span>
+            <a href={withBase('/politica-de-privacidade/')}>Política de Privacidade</a>. <span className="req" aria-hidden="true">*</span>
           </span>
         </label>
         {errorFor('consent')}
@@ -338,6 +347,16 @@ export default function RequestForm({ phoneDisplay, phoneHref, whatsappHref, roo
       </p>
 
       <div aria-live="polite" role="status">
+        {status.kind === 'demo' && (
+          <p className="alert alert--info">
+            <Icon name="info" size={18} />
+            <span>
+              <strong>Versão de demonstração:</strong> os dados foram validados, mas <strong>nada foi enviado</strong>. No
+              site oficial, a solicitação é registrada e encaminhada à recepção. Para reservar agora, ligue para{' '}
+              <a href={phoneHref}>{phoneDisplay}</a>.
+            </span>
+          </p>
+        )}
         {status.kind === 'error' && (
           <p className="alert alert--error">
             <Icon name="info" size={18} />

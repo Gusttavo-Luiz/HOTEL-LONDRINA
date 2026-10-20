@@ -1,8 +1,10 @@
+import { withBase } from '../lib/url';
+
 export const navigation = [
-  { label: 'Início', href: '/#inicio' },
-  { label: 'Sobre o Hotel', href: '/#sobre' },
-  { label: 'Acomodações', href: '/#acomodacoes' },
-  { label: 'Comodidades', href: '/#comodidades' },
-  { label: 'Localização', href: '/#localizacao' },
-  { label: 'Contato', href: '/#contato' },
+  { label: 'Início', href: withBase('/#inicio') },
+  { label: 'Sobre o Hotel', href: withBase('/#sobre') },
+  { label: 'Acomodações', href: withBase('/#acomodacoes') },
+  { label: 'Comodidades', href: withBase('/#comodidades') },
+  { label: 'Localização', href: withBase('/#localizacao') },
+  { label: 'Contato', href: withBase('/#contato') },
 ] as const;
