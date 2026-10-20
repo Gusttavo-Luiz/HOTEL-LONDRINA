@@ -3,13 +3,14 @@ import { navigation } from '../content/navigation';
 import { hotel, phoneHref, whatsappUrl } from '../config/hotel';
 import Logo from './Logo.astro';
 import Icon from './Icon.astro';
+import { withBase } from '../lib/url';
 
 const wa = whatsappUrl('Olá! Gostaria de informações sobre hospedagem no Hotel Triunfo.');
 ---
 
 <header class="header" data-header>
   <div class="container header__bar">
-    <a href="/#inicio" class="header__brand">
+    <a href={withBase('/#inicio')} class="header__brand">
       <Logo />
     </a>
 
@@ -28,7 +29,7 @@ const wa = whatsappUrl('Olá! Gostaria de informações sobre hospedagem no Hote
         </span>
         <span class="visually-hidden header__phone-sr">Ligar para a recepção {hotel.phone.display}</span>
       </a>
-      <a href="/#reservar" class="btn btn--gold btn--sm header__cta">Consultar disponibilidade</a>
+      <a href={withBase('/#reservar')} class="btn btn--gold btn--sm header__cta">Consultar disponibilidade</a>
       <button type="button" class="header__toggle" aria-expanded="false" aria-controls="menu-mobile" data-menu-toggle>
         <Icon name="menu" size={24} class="icon-open" />
         <Icon name="close" size={24} class="icon-close" />
@@ -52,7 +53,7 @@ const wa = whatsappUrl('Olá! Gostaria de informações sobre hospedagem no Hote
       </ul>
     </nav>
     <div class="mobile-menu__actions">
-      <a href="/#reservar" class="btn btn--gold btn--block"><Icon name="calendar" /> Consultar disponibilidade</a>
+      <a href={withBase('/#reservar')} class="btn btn--gold btn--block"><Icon name="calendar" /> Consultar disponibilidade</a>
       <a href={phoneHref} class="btn btn--outline btn--block"><Icon name="phone" /> Ligar {hotel.phone.display}</a>
       {
         wa && (

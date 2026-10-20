@@ -9,6 +9,21 @@ Cândido, 39 – Centro, Londrina - PR).
 - **Servidor Node** com API real de solicitações (SQLite nativo do Node),
   aviso por e-mail via SMTP e **painel da recepção** protegido por senha.
 
+## Demonstração online (GitHub Pages)
+
+Cada atualização da branch `main` publica automaticamente uma **versão de
+demonstração estática** em <https://gusttavo-luiz.github.io/HOTEL-LONDRINA/>
+(workflow `.github/workflows/pages.yml`).
+
+- Não há servidor no GitHub Pages: o formulário valida os dados e avisa que
+  **nada foi enviado** (modo `PUBLIC_DEMO_MODE`). O painel `/admin` não existe lá.
+- A demonstração exibe uma faixa "Versão de demonstração" e não é indexada
+  pelo Google (`noindex` + `robots.txt` bloqueando tudo).
+- Configuração única no GitHub: **Settings → Pages → Build and deployment →
+  Source: GitHub Actions**.
+- Build local da demonstração: `DEPLOY_TARGET=pages PUBLIC_DEMO_MODE=true npm run build`
+  (saída em `dist/client`).
+
 ## Requisitos e comandos
 
 Node.js **22.12+**.

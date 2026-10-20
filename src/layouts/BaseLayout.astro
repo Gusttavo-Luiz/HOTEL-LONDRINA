@@ -3,6 +3,8 @@ import '@fontsource-variable/fraunces/wght.css';
 import '@fontsource-variable/figtree/wght.css';
 import '../styles/global.css';
 import { hotel } from '../config/hotel';
+import { withBase } from '../lib/url';
+import { demoMode } from '../config/flags';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import FloatingContact from '../components/FloatingContact.astro';
@@ -19,7 +21,7 @@ interface Props {
 const { title, description, jsonLd = [], noindex = false } = Astro.props;
 const base = Astro.site ?? hotel.url;
 const canonical = new URL(Astro.url.pathname, base).href;
-const ogImage = new URL('/og-image.jpg', base).href;
+const ogImage = new URL(withBase('/og-image.jpg'), base).href;
 
 /** Somente dados verificados — sem avaliações estruturadas autodeclaradas. */
 const lodging = {
@@ -66,7 +68,7 @@ const lodging = {
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
-    <meta name="robots" content={noindex ? 'noindex, follow' : 'index, follow, max-image-preview:large'} />
+    <meta name="robots" content={noindex || demoMode ? 'noindex, nofollow' : 'index, follow, max-image-preview:large'} />
     <meta name="theme-color" content="#11264a" />
     <meta name="format-detection" content="telephone=no" />
     <meta name="geo.region" content="BR-PR" />
@@ -74,10 +76,10 @@ const lodging = {
 
     <link rel="preload" href={frauncesLatin} as="font" type="font/woff2" crossorigin />
     <link rel="preload" href={figtreeLatin} as="font" type="font/woff2" crossorigin />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="icon" href={withBase('/favicon.svg')} type="image/svg+xml" />
+    <link rel="icon" href={withBase('/favicon-32.png')} sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href={withBase('/apple-touch-icon.png')} />
+    <link rel="manifest" href={withBase('/site.webmanifest')} />
 
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="pt_BR" />
@@ -96,6 +98,13 @@ const lodging = {
   </head>
   <body>
     <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+    {
+      demoMode && (
+        <p class="demo-banner" role="note">
+          Versão de demonstração — os formulários não enviam dados. Atendimento real: {hotel.phone.display}.
+        </p>
+      )
+    }
     <Header />
     <main id="conteudo" tabindex="-1">
       <slot />
@@ -122,5 +131,14 @@ const lodging = {
 <style is:global>
   main:focus {
     outline: none;
+  }
+
+  .demo-banner {
+    padding: 0.45rem var(--gutter);
+    background: var(--gold-300);
+    color: var(--navy-950);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-align: center;
   }
 </style>

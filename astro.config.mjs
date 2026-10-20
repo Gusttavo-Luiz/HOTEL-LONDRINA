@@ -3,8 +3,12 @@ import { defineConfig, envField } from 'astro/config';
 import node from '@astrojs/node';
 import react from '@astrojs/react';
 
+// DEPLOY_TARGET=pages gera a demonstração estática para o GitHub Pages.
+const githubPages = process.env.DEPLOY_TARGET === 'pages';
+
 export default defineConfig({
-  site: 'https://www.hoteltriunfolondrina.com.br',
+  site: githubPages ? 'https://gusttavo-luiz.github.io' : 'https://www.hoteltriunfolondrina.com.br',
+  base: githubPages ? '/HOTEL-LONDRINA' : undefined,
   // Páginas públicas são pré-renderizadas (HTML estático, ótimo para SEO).
   // API de solicitações e painel administrativo rodam no servidor Node.
   output: 'static',
@@ -36,6 +40,7 @@ export default defineConfig({
       PUBLIC_WHATSAPP_NUMBER: envField.string({ context: 'client', access: 'public', optional: true }),
       PUBLIC_BOOKING_ENGINE_URL: envField.string({ context: 'client', access: 'public', optional: true }),
       PUBLIC_SHOW_PLACEHOLDERS: envField.boolean({ context: 'client', access: 'public', optional: true }),
+      PUBLIC_DEMO_MODE: envField.boolean({ context: 'client', access: 'public', optional: true }),
       // Privadas (somente servidor)
       DATA_DIR: envField.string({ context: 'server', access: 'secret', optional: true }),
       DATA_RETENTION_DAYS: envField.number({ context: 'server', access: 'secret', optional: true }),

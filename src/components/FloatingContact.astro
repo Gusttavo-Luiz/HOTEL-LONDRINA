@@ -1,6 +1,7 @@
 ---
 import { hotel, phoneHref } from '../config/hotel';
 import Icon from './Icon.astro';
+import { withBase } from '../lib/url';
 ---
 
 <!-- Celular: barra inferior fixa. Desktop: botão flutuante que some sobre o formulário e o rodapé. -->
@@ -9,7 +10,7 @@ import Icon from './Icon.astro';
     <Icon name="phone" size={20} />
     <span>Ligar</span><span class="visually-hidden"> para a recepção {hotel.phone.display}</span>
   </a>
-  <a href="/#reservar" class="floating__book">
+  <a href={withBase('/#reservar')} class="floating__book">
     <Icon name="calendar" size={20} />
     <span>Consultar disponibilidade</span>
   </a>
