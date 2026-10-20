@@ -18,6 +18,8 @@ export default defineConfig({
   // CSS embutido no HTML: evita requisições que bloqueiam a renderização.
   build: { format: 'directory', inlineStylesheets: 'always' },
   compressHTML: true,
+  // Fontes sempre como arquivos (sem data: URI), compatível com a CSP font-src 'self'.
+  vite: { build: { assetsInlineLimit: 0 } },
   security: {
     checkOrigin: true,
     csp: {

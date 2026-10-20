@@ -12,7 +12,7 @@ const roomOptions = rooms
   .map((r) => ({ id: r.id, name: r.name }));
 ---
 
-<section id="contato" class="section" aria-labelledby="contato-title">
+<section id="contato" class="section section--plain" aria-labelledby="contato-title">
   <div class="container contact">
     <div class="contact__info">
       <SectionHeading eyebrow="Contato e reservas" title="Fale com a recepção do Hotel Triunfo." id="contato-title">
@@ -130,7 +130,7 @@ const roomOptions = rooms
   }
 
   .contact-item__icon--wa {
-    background: #1b7a4c;
+    background: var(--success-500);
     color: var(--white);
   }
 

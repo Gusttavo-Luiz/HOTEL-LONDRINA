@@ -14,7 +14,7 @@ const wa = whatsappUrl();
     <div class="footer__brand">
       <Logo tone="light" />
       <p>{hotel.tradeName}. Hospedagem econômica e tradicional no centro de Londrina, com recepção 24 horas.</p>
-      <a href={withBase('/#reservar')} class="btn btn--gold btn--sm">Consultar disponibilidade</a>
+      <a href={withBase('/#reservar')} class="btn btn--gold btn--sm">Faça sua reserva</a>
     </div>
 
     <nav aria-label="Rodapé">
@@ -65,8 +65,10 @@ const wa = whatsappUrl();
 
 <style>
   .footer {
-    background: var(--navy-950);
-    color: rgb(244 238 228 / 0.78);
+    position: relative;
+    background: var(--grad-navy);
+    border-top: 3px solid var(--gold-400);
+    color: rgb(255 255 255 / 0.74);
     font-size: 0.9375rem;
   }
 
@@ -140,7 +142,7 @@ const wa = whatsappUrl();
     gap: 0.5rem;
     margin-top: 1.25rem;
     font-size: 0.8125rem;
-    color: rgb(244 238 228 / 0.65);
+    color: rgb(255 255 255 / 0.6);
   }
 
   .footer__bottom {

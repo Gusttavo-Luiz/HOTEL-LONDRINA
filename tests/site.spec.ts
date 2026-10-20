@@ -34,7 +34,7 @@ test.describe('Página inicial', () => {
     const errors = await open(page);
     await expect(page).toHaveTitle(/Hotel barato em Londrina/);
     await expect(page.locator('h1')).toHaveCount(1);
-    await expect(page.locator('h1')).toHaveText('Sua estadia em Londrina com conforto, praticidade e economia.');
+    await expect(page.locator('h1')).toHaveText('Sua hospedagem em Londrina com conforto e praticidade.');
     await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /centro de Londrina/);
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://www.hoteltriunfolondrina.com.br/');
     await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', /og-image\.jpg$/);
@@ -159,9 +159,9 @@ test.describe('Consulta de hospedagem', () => {
     await expect(form.getByLabel(/^Nome/)).toBeFocused();
   });
 
-  test('"Consultar disponibilidade" leva à consulta', async ({ page }) => {
+  test('"Faça sua reserva" leva à consulta', async ({ page }) => {
     await open(page);
-    await page.locator('#inicio').getByRole('link', { name: 'Consultar disponibilidade' }).click();
+    await page.locator('#inicio').getByRole('link', { name: 'Faça sua reserva' }).click();
     await expect(page).toHaveURL(/#reservar$/);
     await expect(page.getByRole('button', { name: 'Buscar hospedagem' })).toBeInViewport();
   });

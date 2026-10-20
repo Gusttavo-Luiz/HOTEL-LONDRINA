@@ -2,47 +2,67 @@
 import { hotel } from '../config/hotel';
 import SectionHeading from './SectionHeading.astro';
 import Icon from './Icon.astro';
+import type { IconName } from './icons';
 
 const { value, count, updatedAt } = hotel.googleRating;
 const pct = (value / 5) * 100;
-const starPath =
-  'M12 2.5l2.94 5.96 6.56.95-4.75 4.63 1.12 6.54L12 17.5l-5.87 3.08 1.12-6.54L2.5 9.41l6.56-.95z';
+const starPath = 'M12 2.5l2.94 5.96 6.56.95-4.75 4.63 1.12 6.54L12 17.5l-5.87 3.08 1.12-6.54L2.5 9.41l6.56-.95z';
 const [year, month] = updatedAt.split('-');
 const monthName = new Date(Number(year), Number(month) - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+
+/** O que o visitante encontra no perfil oficial — sem citar depoimentos. */
+const points: { icon: IconName; title: string; text: string }[] = [
+  { icon: 'users', title: 'Opiniões de hóspedes reais', text: 'Avaliações publicadas por quem se hospedou, com nota de 1 a 5.' },
+  { icon: 'search', title: 'Transparência', text: 'Comentários positivos e críticos, todos visíveis no Google.' },
+  { icon: 'mapPin', title: 'Perfil oficial', text: 'Endereço, telefone e fotos do Hotel Triunfo no Google Maps.' },
+];
 ---
 
-<section id="avaliacoes" class="section section--navy" aria-labelledby="avaliacoes-title">
-  <div class="container reviews">
-    <SectionHeading eyebrow="Avaliações" title="A experiência de quem já se hospedou conosco." id="avaliacoes-title">
-      Nossa reputação é construída por hóspedes reais. Veja todas as opiniões, positivas e críticas, diretamente no
-      Google.
+<section id="avaliacoes" class="section section--white" aria-labelledby="avaliacoes-title">
+  <div class="container">
+    <SectionHeading eyebrow="Avaliações" title="A experiência de quem já se hospedou conosco." id="avaliacoes-title" align="center">
+      Nossa reputação é construída por hóspedes reais. Confira todas as opiniões diretamente no Google.
     </SectionHeading>
 
-    <div class="reviews__card" data-reveal>
-      <p class="reviews__score">
-        <span class="reviews__value">{value.toLocaleString('pt-BR', { minimumFractionDigits: 1 })}</span>
-        <span class="reviews__of">de 5</span>
-      </p>
-      <svg class="reviews__stars" viewBox="0 0 130 24" width="150" height="28" role="img" aria-label={`Nota ${value.toLocaleString('pt-BR')} de 5 no Google`}>
-        <defs>
-          <clipPath id="estrelas-nota"><rect x="0" y="0" width={(130 * pct) / 100} height="24" /></clipPath>
-          <g id="estrelas">
-            {Array.from({ length: 5 }, (_, i) => (
-              <path transform={`translate(${i * 26} 0)`} d={starPath} />
-            ))}
-          </g>
-        </defs>
-        <use href="#estrelas" class="reviews__stars-bg" />
-        <use href="#estrelas" class="reviews__stars-fg" clip-path="url(#estrelas-nota)" />
-      </svg>
-      <p class="reviews__count">
-        <strong>{count.toLocaleString('pt-BR')} avaliações</strong> no Google
-      </p>
-      <p class="reviews__updated">Dados de referência de {monthName}.</p>
-      <a href={hotel.links.googleReviews} class="btn btn--gold" target="_blank" rel="noopener">
-        Ver avaliações no Google <Icon name="external" size={18} />
-        <span class="visually-hidden">(abre em nova aba)</span>
-      </a>
+    <div class="reviews">
+      <div class="score-card" data-reveal>
+        <p class="score-card__source">Avaliação no Google</p>
+        <p class="score-card__value">
+          {value.toLocaleString('pt-BR', { minimumFractionDigits: 1 })}<span>de 5</span>
+        </p>
+        <svg class="score-card__stars" viewBox="0 0 130 24" width="150" height="28" role="img" aria-label={`Nota ${value.toLocaleString('pt-BR')} de 5 no Google`}>
+          <defs>
+            <clipPath id="estrelas-nota"><rect x="0" y="0" width={(130 * pct) / 100} height="24" /></clipPath>
+            <g id="estrelas">
+              {Array.from({ length: 5 }, (_, i) => <path transform={`translate(${i * 26} 0)`} d={starPath} />)}
+            </g>
+          </defs>
+          <use href="#estrelas" class="score-card__stars-bg" />
+          <use href="#estrelas" class="score-card__stars-fg" clip-path="url(#estrelas-nota)" />
+        </svg>
+        <p class="score-card__count"><strong>{count.toLocaleString('pt-BR')} avaliações</strong></p>
+        <p class="score-card__updated">Dados de referência de {monthName}.</p>
+        <a href={hotel.links.googleReviews} class="btn btn--gold btn--block" target="_blank" rel="noopener">
+          Ver avaliações no Google <Icon name="external" size={18} />
+          <span class="visually-hidden">(abre em nova aba)</span>
+        </a>
+      </div>
+
+      <ul class="review-points" role="list">
+        {
+          points.map((p) => (
+            <li class="review-point" data-reveal>
+              <span class="review-point__icon">
+                <Icon name={p.icon} size={22} />
+              </span>
+              <div>
+                <h3>{p.title}</h3>
+                <p>{p.text}</p>
+              </div>
+            </li>
+          ))
+        }
+      </ul>
     </div>
   </div>
 </section>
@@ -50,65 +70,115 @@ const monthName = new Date(Number(year), Number(month) - 1, 1).toLocaleDateStrin
 <style>
   .reviews {
     display: grid;
-    gap: 2rem;
-    align-items: center;
+    gap: 1.25rem;
+    max-width: 980px;
+    margin-inline: auto;
   }
 
-  .reviews :global(.heading) {
-    margin-bottom: 0;
-  }
-
-  .reviews__card {
+  .score-card {
     display: grid;
     justify-items: center;
-    gap: 0.6rem;
+    gap: 0.55rem;
     padding: clamp(1.75rem, 4vw, 2.5rem);
-    border: 1px solid rgb(255 255 255 / 0.12);
     border-radius: var(--radius-lg);
-    background: rgb(255 255 255 / 0.04);
+    background: var(--grad-navy);
+    color: var(--white);
     text-align: center;
+    box-shadow: var(--shadow-lg);
   }
 
-  .reviews__score {
+  .score-card__source {
+    font-family: var(--font-display);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--gold-300);
+  }
+
+  .score-card__value {
     display: flex;
     align-items: baseline;
-    gap: 0.5rem;
-    color: var(--white);
-  }
-
-  .reviews__value {
+    gap: 0.45rem;
     font-family: var(--font-display);
     font-size: clamp(3.5rem, 8vw, 4.5rem);
-    font-weight: 500;
+    font-weight: 800;
+    letter-spacing: -0.04em;
     line-height: 1;
   }
 
-  .reviews__of {
-    font-size: 1.125rem;
-    color: rgb(244 238 228 / 0.7);
+  .score-card__value span {
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    color: rgb(255 255 255 / 0.7);
   }
 
-  .reviews__stars-bg {
-    fill: rgb(255 255 255 / 0.22);
+  .score-card__stars-bg {
+    fill: rgb(255 255 255 / 0.2);
   }
 
-  .reviews__stars-fg {
+  .score-card__stars-fg {
     fill: var(--gold-400);
   }
 
-  .reviews__count {
-    color: var(--white);
+  .score-card__count {
+    font-size: 1.05rem;
   }
 
-  .reviews__updated {
+  .score-card__updated {
     margin-bottom: 0.75rem;
     font-size: 0.8125rem;
-    color: rgb(244 238 228 / 0.65);
+    color: rgb(255 255 255 / 0.65);
   }
 
-  @media (min-width: 900px) {
+  .review-points {
+    display: grid;
+    gap: 1rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .review-point {
+    display: flex;
+    gap: 1rem;
+    padding: 1.35rem 1.4rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--offwhite);
+  }
+
+  .review-point__icon {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    background: var(--white);
+    border: 1px solid var(--line);
+    color: var(--gold-700);
+  }
+
+  h3 {
+    margin-bottom: 0.25rem;
+    font-size: 1.05rem;
+  }
+
+  .review-point p {
+    font-size: 0.95rem;
+    color: var(--gray-600);
+  }
+
+  @media (min-width: 860px) {
     .reviews {
-      grid-template-columns: 1.2fr 1fr;
+      grid-template-columns: 0.9fr 1.1fr;
+      align-items: stretch;
+    }
+
+    .score-card {
+      align-content: center;
     }
   }
 </style>
